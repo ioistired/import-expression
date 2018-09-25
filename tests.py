@@ -19,10 +19,13 @@ def _replace_header(string):
 	left, header, right = string.partition(import_expression_parser.HEADER)
 	return right
 
-def _test(input, output):
-	assert _replace_header(parse_import_expressions(input)) == output
+def _parse(input):
+	return _replace_header(parse_import_expressions(input))
 
 imp = '__import_module'
 
 def test_basic():
-	_test('<<x.y>>.z', f'{imp}("x.y").z')
+	assert _parse('<<x.y>>.z') == f'{imp}("x.y").z'
+	assert _parse('print(<<tokenize>>.OP)') == f'print({imp}("tokenize").OP)'
+
+

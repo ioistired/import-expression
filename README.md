@@ -73,7 +73,7 @@ or [`compile()`](https://docs.python.org/3/library/functions.html#compile).
 * What about bitshifts?
   The astute reader will have noticed that this syntax totally conflicts with the bitshift operators. \
   That's true. If you use this code, you may not use bit shifts. \
-  I'm working on a version which would let you just write $x instead of <<x>>, so stay tuned for that.
+  I'm working on a version which would let you just write $x instead of \<\<x\>\>, so stay tuned for that.
 
 ## [License](/LICENSE)
 
