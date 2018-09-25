@@ -5,16 +5,16 @@ import io
 import collections
 import tokenize
 
-_is_op = lambda op: lambda token: token.type == tokenize.OP and token.string == op
+_is_op = lambda type, op: lambda token: token.type == type and token.string == op
 
 START_IMPORT = '<<'
-_is_start = _is_op(START_IMPORT)
+_is_start = _is_op(tokenize.OP, START_IMPORT)
 
 END_IMPORT = '>>'
-_is_end = _is_op(END_IMPORT)
+_is_end = _is_op(tokenize.OP, END_IMPORT)
 
 DOT = '.'
-_is_dot = _is_op(DOT)
+_is_dot = _is_op(tokenize.OP, DOT)
 
 IMPORTER = '__import_module'
 HEADER = f'from importlib import import_module as {IMPORTER}\n'
@@ -57,11 +57,11 @@ def _error(state, message, token=None):
 	text, (lineno, offset) = token.line, token.end
 	return SyntaxError(message, (state.filename, lineno, offset, text))
 
-def parse_import_expressions(str, filename='<repl session>'):
+def parse_import_expressions(str, *, filename='<repl session>'):
 	output = io.StringIO()
 	output.write(HEADER)
 
-	state = _ImportParserState()
+	state = _ImportParserState(filename=filename)
 
 	for token in _token_gen(str):
 		_parse(token, state, output)
