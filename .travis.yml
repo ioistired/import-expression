@@ -6,4 +6,5 @@ python:
 script:
   - pip install coveralls pytest pytest-cov
   - py.test --cov=import_expression_parser tests.py
-
+after_success:
+  - coveralls
