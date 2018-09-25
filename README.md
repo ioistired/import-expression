@@ -60,17 +60,17 @@ or [`compile()`](https://docs.python.org/3/library/functions.html#compile).
 
 *Actually asked questions for a new project! Golly gee!*
 
-* Why not just use `__import__('x')`?
-	From the [discord.py server](https://discord.gg/r3sSKJJ):
-	> devon#4089: if i want to type `_("thing")` \
-	> devon#4089: i have to move my fingers between three different locations \
-	> devon#4089: both at the end and start of the string \
-	> lambda#0987: yeah and [*it's*] also a pain to type on mobile so ok \
-	> devon#4089: \<\<x\>\> is slightly less grating
+* Why not just use `__import__('x')`? \
+  From the [discord.py server](https://discord.gg/r3sSKJJ):
+  > devon#4089: if i want to type `_("thing")` \
+  > devon#4089: i have to move my fingers between three different locations \
+  > devon#4089: both at the end and start of the string \
+  > lambda#0987: yeah and [*it's*] also a pain to type on mobile so ok \
+  > devon#4089: \<\<x\>\> is slightly less grating
 
-*OK you got me, **this** one's just anticipated.*
+*OK you got me, **this** question's just anticipated.*
 
-* What about bitshifts?
+* What about bitshifts? \
   The astute reader will have noticed that this syntax totally conflicts with the bitshift operators. \
   That's true. If you use this code, you may not use bit shifts. \
   I'm working on a version which would let you just write $x instead of \<\<x\>\>, so stay tuned for that.
