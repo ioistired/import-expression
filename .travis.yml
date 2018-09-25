@@ -1,8 +1,12 @@
 language: python
 python:
-  - '3.6'
-  - '3.7'
-  - 'pypy3'
+  - 3.6
+  - pypy3
+jobs:
+	include:
+		- python: 3.7
+			dist: xenial
+			sudo: required
 script:
   - pip install coveralls pytest pytest-cov
   - py.test --cov=import_expression_parser tests.py
