@@ -56,6 +56,10 @@ other than invalid import expression syntax.
 To detect these, you must also use [the `ast` module](https://docs.python.org/3/library/ast.html)
 or [`compile()`](https://docs.python.org/3/library/functions.html#compile).
 
+It also does not even restore whitespace yet!
+That means, parse(`def foo(): return <<x>>.y`) is equivalent to parse(`deffoo():return<<x>>.y`)
+which is obviously invalid syntax.
+
 ## FAQ
 
 *Actually asked questions for a new project! Golly gee!*
