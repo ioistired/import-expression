@@ -5,12 +5,10 @@ from import_expression_parser import parse_import_expressions
 
 def test_invalid_syntax():
 	for invalid in (
-		'<< <<x>>.y >>',
-		'<<.x>>',
-		'<<',
-		'>>',
-		'<<"foo">>',
-		'<<a>>.<<b>>',
+		'?foo',
+		'foo?.bar?',
+		'foo.bar?.baz?',
+		'foo.bar?.baz',
 	):
 		with py.test.raises(SyntaxError):
 			parse_import_expressions(invalid)
@@ -25,14 +23,13 @@ def _parse(input):
 imp = '__import_module'
 
 def test_basic():
-	assert _parse('<<x.y>>.z') == f'{imp}("x.y").z'
-	assert _parse('print(<<tokenize>>.OP)') == f'print({imp}("tokenize").OP)'
+	assert _parse('x.y?.z') == f'{imp}("x.y").z'
+	assert _parse('print(tokenize?.OP)') == f'print({imp}("tokenize").OP)'
 
 def test_eval():
 	import builtins
 	import importlib
 	import textwrap
-	import tokenize
 
 	_G = dict(__import_module=importlib.import_module)
 	globals = _G.copy
@@ -40,15 +37,16 @@ def test_eval():
 	def eval(str):
 		return builtins.eval(parse_import_expressions(str, include_import_statement=False), globals())
 
-	assert eval('<<tokenize>>.OP') == tokenize.OP
-	assert eval('<<urllib.parse>>.quote("?")') == '%3F'
+	import ipaddress
+	assert eval('ipaddress?.IPV6LENGTH') == ipaddress.IPV6LENGTH
+	assert eval('urllib.parse?.quote("?")') == '%3F'
 
 	g = {}
 	exec(parse_import_expressions(textwrap.dedent("""
 		def foo():
-			return <<urllib.parse>>.quote('?')
+			return urllib.parse?.unquote('%3F')
 		def bar():
-			return <<operator>>.concat(foo(), "these_tests_are_overkill_for_a_debug_cog%3D1")"""
+			return operator?.concat(foo(), "these_tests_are_overkill_for_a_debug_cog%3D1")"""
 	)), g)
 
-	assert g['bar']() == '%3Fthese_tests_are_overkill_for_a_debug_cog%3D1'
+	assert g['bar']() == '?these_tests_are_overkill_for_a_debug_cog=1'
