@@ -57,9 +57,18 @@ def _error(state, message, token=None):
 	text, (lineno, offset) = token.line, token.end
 	return SyntaxError(message, (state.filename, lineno, offset, text))
 
-def parse_import_expressions(str, *, filename='<repl session>'):
+def parse_import_expressions(str, *, filename='<repl session>', include_import_statement=True):
+	f"""parse a string containing python code and import expressions
+
+	filename: what filename to show in SyntaxErrors.
+	include_input_statement: whether to include '{HEADER}' in the generated code.
+	Disable this if you are using eval.
+	To use this with eval you must then pass in {IMPORTER} = importlib.import_module to the globals.
+	"""
 	output = io.StringIO()
-	output.write(HEADER)
+
+	if include_import_statement:
+		output.write(HEADER)
 
 	state = _ImportParserState(filename=filename)
 
