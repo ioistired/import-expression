@@ -1,5 +1,8 @@
 # Import Expression Parser (for lack of a better name)
 
+[![Build Status](https://travis-ci.org/bmintz/import-expression-parser.svg?branch=main)](https://travis-ci.org/bmintz/import-expression-parser)
+[![Coverage Status](https://coveralls.io/repos/github/bmintz/import-expression-parser/badge.svg?branch=main)](https://coveralls.io/github/bmintz/import-expression-parser?branch=main)
+
 Import Expression Parser converts code like this:
 
 ```py
