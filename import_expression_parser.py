@@ -97,6 +97,9 @@ def _handle_op(token, state, output):
 	elif token.string == DOT:
 		_handle_dot(token, state, output)
 
+	else:
+		output.write(token.string)
+
 def _handle_import_expr_start(state, output):
 	if state.in_import:
 		# e.g. "<< <<x>>.y >>"
