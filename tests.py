@@ -1,3 +1,5 @@
+import builtins
+
 import py.test
 
 import import_expression_parser as iep
@@ -13,26 +15,39 @@ def test_invalid_syntax():
 			iep.parse(invalid)
 
 def test_eval():
-	import builtins
-	import importlib
 	import textwrap
-
-	_G = dict(__import_module=importlib.import_module)
-	globals = _G.copy
-
-	def eval(str):
-		return builtins.eval(iep.parse(str, include_import_statement=False), globals())
 
 	import ipaddress
 	assert eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
 	assert eval('urllib.parse!.quote("!")') == '%3F'
 
 	g = {}
-	exec(iep.parse(textwrap.dedent("""
+	exec(textwrap.dedent("""
 		def foo():
 			return urllib.parse!.unquote('%3F')
 		def bar():
 			return operator!.concat(foo(), "these_tests_are_overkill_for_a_debug_cog%3D1")"""
-	)), g)
+	), g)
 
 	assert g['bar']() == '?these_tests_are_overkill_for_a_debug_cog=1'
+
+def eval(str, globals=None, locals=None):
+	from importlib import import_module
+
+	globals, locals = _parse_eval_exec_args(globals, locals)
+
+	globals = {
+		iep.IMPORTER: import_module}
+	return builtins.eval(compile(iep.parse(str, include_import_header=False), '<eval test case>', 'eval'), globals)
+
+def exec(str, globals, locals):
+	builtins.exec(compile(iep.parse(str), '<exec test case>', 'exec'), globals, locals)
+
+def _parse_eval_exec_args(globals, locals):
+	if globals is None:  # can't use truthiness because {} is falsy
+		globals = {}
+
+	if locals is None:
+		locals = globals
+
+	return globals, locals
