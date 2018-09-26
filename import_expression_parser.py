@@ -156,7 +156,7 @@ class ImportTransformer(ast.NodeTransformer):
 
 			return ast.copy_location(ast.Call(
 				func=ast.Name(id=IMPORTER, ctx=ast.Load()), args=[
-					ast.Str(s=NotImplemented)),  # XXX
+					ast.Str(s=NotImplemented),  # XXX
 				]
 			), node)
 		else:
