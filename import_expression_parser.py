@@ -1,148 +1,164 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
+import ast
 import io
 import collections
+import token
 import tokenize
+import uuid
 
-_is_op = lambda type, op: lambda token: token.type == type and token.string == op
+_is = lambda type, op: lambda token: token.type == type and token.string == op
 
-START_IMPORT = '<<'
-_is_start = _is_op(tokenize.OP, START_IMPORT)
-
-END_IMPORT = '>>'
-_is_end = _is_op(tokenize.OP, END_IMPORT)
-
-DOT = '.'
-_is_dot = _is_op(tokenize.OP, DOT)
+IMPORT_OP = '!'
+_is_import = _is(token.ERRORTOKEN, IMPORT_OP)
 
 IMPORTER = '__import_module'
 HEADER = f'from importlib import import_module as {IMPORTER}\n'
 
-def _token_gen(str):
-	return tokenize.tokenize(io.BytesIO(str.encode('utf-8')).readline)
+# replace IMPORT_OP with this to make it valid syntax
+MARKER = '__IMPORT_EXPR_END'
 
-class _ImportParserState:
-	__slots__ = ('in_import', 'started_name', 'previous_tokens', 'filename')
+NEWLINES = {token.NEWLINE, tokenize.NL}
 
-	def __init__(self, filename='<repl session>'):
-		self.in_import = False
-		self.started_name = False
-		# enough to store ">>" + "." in order
-		# to determine if the user is dumb enough to do
-		# <<x>>.<<y>>
-		self.previous_tokens = collections.deque(maxlen=2)
-		self.filename = filename
+# taken from Lib/tokenize.py at 3.6
+# TODO find out if license is compat with Charity Public License
+class _Untokenizer:
+	def __init__(self):
+		self.tokens = []
+		self.prev_row = 1
+		self.prev_col = 0
+		self.encoding = None
 
-	@property
-	def last_token(self):
-		return self.previous_tokens[-1]
+	def add_whitespace(self, start):
+		row, col = start
+		if row < self.prev_row or row == self.prev_row and col < self.prev_col:
+			raise ValueError("start ({},{}) precedes previous end ({},{})"
+							 .format(row, col, self.prev_row, self.prev_col))
+		row_offset = row - self.prev_row
+		if row_offset:
+			self.tokens.append("\\\n" * row_offset)
+			self.prev_col = 0
+		col_offset = col - self.prev_col
+		if col_offset:
+			self.tokens.append(" " * col_offset)
 
-	def reset(self):
-		self.__init__(filename=self.filename)
+	def untokenize(self, iterable, *, include_import_statement):
+		it = iter(iterable)
+		indents = []
+		startline = False
 
-	def __iter__(self):
-		yield from map(self.__getattr__, self.__slots__)
+		if include_import_statement:
+			self.tokens.append(HEADER)
 
-	def __repr__(self):
-		return (
-			f'{self.__module__}.{self.__class__.__qualname__}<'
-			f'in_import={self.in_import}, '
-			f'started_name={self.started_name}, '
-			f'previous_tokens={list(self.previous_tokens)}, '
-			f'filename={self.filename!r}>')
+		for t in it:
+			if len(t) == 2:
+				self.compat(t, it)
+				break
+			tok_type, value, start, end, line = t
+			if tok_type == tokenize.ENCODING:
+				self.encoding = value
+				continue
+			if tok_type == token.ENDMARKER:
+				break
+			if tok_type == token.INDENT:
+				indents.append(value)
+				continue
+			elif tok_type == token.DEDENT:
+				indents.pop()
+				self.prev_row, self.prev_col = end
+				continue
+			elif tok_type in NEWLINES:
+				startline = True
+			elif startline and indents:
+				indent = indents[-1]
+				if start[1] >= len(indent):
+					self.tokens.append(indent)
+					self.prev_col = len(indent)
+				startline = False
 
-def _error(state, message, token=None):
-	token = token or state.last_token
-	text, (lineno, offset) = token.line, token.end
-	return SyntaxError(message, (state.filename, lineno, offset, text))
+			self.add_whitespace(start)
 
-def parse_import_expressions(str, *, filename='<repl session>', include_import_statement=True):
-	f"""parse a string containing python code and import expressions
+			if _is_import(t):
+				self.tokens.append(MARKER)
+			else:
+				self.tokens.append(value)
 
-	filename: what filename to show in SyntaxErrors.
-	include_input_statement: whether to include '{HEADER}' in the generated code.
-	Disable this if you are using eval.
-	To use this with eval you must then pass in {IMPORTER} = importlib.import_module to the globals.
-	"""
-	output = io.StringIO()
+			self.prev_row, self.prev_col = end
+			if tok_type in NEWLINES:
+				self.prev_row += 1
+				self.prev_col = 0
 
-	if include_import_statement:
-		output.write(HEADER)
+		return "".join(self.tokens)
 
-	state = _ImportParserState(filename=filename)
+	def compat(self, token, iterable):
+		indents = []
+		toks_append = self.tokens.append
+		startline = token[0] in (NEWLINE, NL)
+		prevstring = False
 
-	for token in _token_gen(str):
-		_parse(token, state, output)
-		state.previous_tokens.append(token)
+		for tok in chain([token], iterable):
+			toknum, tokval = tok[:2]
+			if toknum == tokenize.ENCODING:
+				self.encoding = tokval
+				continue
 
-	if state.in_import:
-		# e.g. "<<"
-		raise _error(state, 'unclosed start of import expression')
+			if toknum in {token.NAME, token.NUMBER, token.ASYNC, token.AWAIT}:
+				tokval += ' '
 
-	return output.getvalue()
+			# Insert a space between two consecutive strings
+			if toknum == STRING:
+				if prevstring:
+					tokval = ' ' + tokval
+				prevstring = True
+			else:
+				prevstring = False
 
-def _parse(token, state, output):
-	if token.type == tokenize.ENCODING:
-		# tokenize puts this at the start of every token stream ¯⧹_(ツ)_⧸¯
-		return
+			if toknum == token.INDENT:
+				indents.append(tokval)
+				continue
+			elif toknum == token.DEDENT:
+				indents.pop()
+				continue
+			elif toknum in NEWLINES:
+				startline = True
+			elif startline and indents:
+				toks_append(indents[-1])
+				startline = False
+			toks_append(tokval)
 
-	elif token.type == tokenize.OP:
-		_handle_op(token, state, output)
+def _tokenize(string):
+	return tokenize.tokenize(io.BytesIO(string.encode('utf-8')).readline)
 
-	elif state.in_import:
-		_handle_import_name(token, state, output)
+def parse(s, *, include_import_statement=True, filename='<repl session>'):
+	tokens = _tokenize(s)  # TODO is there a better way than tokenizing and then untokenizing? don't think so?
+	ut = _Untokenizer()
+	out = ut.untokenize(tokens, include_import_statement=include_import_statement)
+	if ut.encoding is not None:
+		out = out.encode(ut.encoding)
+	return ImportTransformer().visit(ast.parse(out, filename))
 
-	else:
-		output.write(token.string)
+class ImportTransformer(ast.NodeTransformer):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 
-def _handle_op(token, state, output):
-	if token.string == START_IMPORT:
-		_handle_import_expr_start(state, output)
+	def visit_Attribute(self, node):
+		if not isinstance(node.ctx, ast.Load):
+			print('not load')
+			return node
 
-	elif token.string == END_IMPORT:
-		_handle_import_expr_end(state, output)
+		if node.attr.endswith(MARKER):
+			print('endswith marker')
 
-	elif token.string == DOT:
-		_handle_dot(token, state, output)
+			without_marker = node.attr.rpartition(MARKER)[0]
 
-	else:
-		output.write(token.string)
+			return node  # "comment out" the rest
 
-def _handle_import_expr_start(state, output):
-	if state.in_import:
-		# e.g. "<< <<x>>.y >>"
-		raise _error(state, 'nested import expressions are not allowed')
-
-	if _is_end(state.previous_tokens[0]) and _is_dot(state.last_token):
-		raise _error(state, 'attribute access: expected name, got import expression')
-
-	state.in_import = True
-	output.write(f'{IMPORTER}("')
-
-def _handle_import_expr_end(state, output):
-	if not state.in_import:
-		# e.g. ">>"
-		raise _error(state, 'unexpected end of import expression')
-
-	if _is_dot(state.last_token):
-		# e.g. "<<x.>>.y"
-		raise _error(state, f'unexpected end of import expression; expected name, got "{DOT}"')
-
-	state.reset()
-	output.write('")')
-
-def _handle_dot(token, state, output):
-	if state.in_import and not state.started_name:
-		# e.g. "<<.x>>"
-		raise _error(state, 'import expression may not begin with a dot')
-
-	output.write(token.string)
-
-def _handle_import_name(token, state, output):
-	if token.type == tokenize.NAME:
-		state.started_name = True
-		output.write(token.string)
-	else:
-		# e.g. "<<'foo'>>" (a lot of cases will reach this branch though)
-		raise _error(state, token=token, message='expected only (possibly dotted) names inside of an import expression')
+			return ast.copy_location(ast.Call(
+				func=ast.Name(id=IMPORTER, ctx=ast.Load()), args=[
+					ast.Str(s=NotImplemented)),  # XXX
+				]
+			), node)
+		else:
+			print('not endswith marker', node.attr)
+			return node
