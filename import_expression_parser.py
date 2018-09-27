@@ -8,6 +8,8 @@ import token
 import tokenize
 import uuid
 
+import astor
+
 _is = lambda type, op: lambda token: token.type == type and token.string == op
 
 IMPORT_OP = '!'
@@ -130,35 +132,65 @@ class _Untokenizer:
 def _tokenize(string):
 	return tokenize.tokenize(io.BytesIO(string.encode('utf-8')).readline)
 
+
+# take some node and verify that the attribute
+# accessing and importing isn't incorrect.
+def check(node):
+	pass
+
+
 def parse(s, *, include_import_statement=True, filename='<repl session>'):
 	tokens = _tokenize(s)  # TODO is there a better way than tokenizing and then untokenizing? don't think so?
 	ut = _Untokenizer()
 	out = ut.untokenize(tokens, include_import_statement=include_import_statement)
 	if ut.encoding is not None:
 		out = out.encode(ut.encoding)
-	return ImportTransformer().visit(ast.parse(out, filename))
+	res = ImportTransformer().visit(ast.parse(out, filename))
+	astor.to_source(res)
+	return res
 
 class ImportTransformer(ast.NodeTransformer):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
 	def visit_Attribute(self, node):
-		if not isinstance(node.ctx, ast.Load):
-			print('not load')
-			return node
+		
+		# pprint(node)
+		
+		# print(node.value)
+		
+		if isinstance(node.value, ast.Name):
+			# here, we are at the spot where the visitor
+			# will replace the node with a call
+			val = node.value.id
+			print(val)
+			func = ast.Name(id=IMPORTER, ctx=ast.Load())
+			
+			call = ast.Call(func=func, args=[ast.Str(s="Foo")])
+			
+			return ast.copy_location(call, node)
+	
+		return ast.copy_location(self.visit(node.value), node)
+		
+		# if not isinstance(node.ctx, ast.Load):
+		# 	# print('not load')
+		# 	return node
 
-		if node.attr.endswith(MARKER):
-			print('endswith marker')
+		# if node.attr.endswith(MARKER):
+		# 	# print('endswith marker')
 
-			without_marker = node.attr.rpartition(MARKER)[0]
+		# 	without_marker = node.attr.rpartition(MARKER)[0]
 
-			return node  # "comment out" the rest
+		# 	return node  # "comment out" the rest
 
-			return ast.copy_location(ast.Call(
-				func=ast.Name(id=IMPORTER, ctx=ast.Load()), args=[
-					ast.Str(s=NotImplemented),  # XXX
-				]
-			), node)
-		else:
-			print('not endswith marker', node.attr)
-			return node
+		# 	return ast.copy_location(ast.Call(
+		# 		func=ast.Name(id=IMPORTER, ctx=ast.Load()), args=[
+		# 			ast.Str(s=NotImplemented),  # XXX
+		# 		]
+		# 	), node)
+		# else:
+		# 	# print('not endswith marker', node.attr)
+		# 	return node
+
+
+
