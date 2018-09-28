@@ -42,12 +42,3 @@ def eval(str, globals=None, locals=None):
 
 def exec(str, globals, locals):
 	builtins.exec(compile(iep.parse(str), '<exec test case>', 'exec'), globals, locals)
-
-def _parse_eval_exec_args(globals, locals):
-	if globals is None:  # can't use truthiness because {} is falsy
-		globals = {}
-
-	if locals is None:
-		locals = globals
-
-	return globals, locals

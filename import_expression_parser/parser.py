@@ -2,7 +2,7 @@ import ast
 
 from .constants import *
 
-parse_ast = lambda root_node, **kwargs: Transformer(**kwargs).visit(root_node)
+parse_ast = lambda root_node, **kwargs: ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
 
 def remove_string_right(haystack, needle):
 	left, needle, right = haystack.rpartition(needle)
@@ -107,4 +107,5 @@ class Transformer(ast.NodeTransformer):
 	def import_call(attribute_source):
 		return ast.Call(
 			func=ast.Name(id=IMPORTER, ctx=_load),
-			args=[attribute_source])
+			args=[ast.Str(attribute_source)],
+			keywords=[])
