@@ -8,29 +8,21 @@ def remove_string_right(haystack, needle):
 	left, needle, right = haystack.rpartition(needle)
 	if not right:
 		return left
+	# needle not found
 	return haystack
 
 remove_import_op = lambda name: remove_string_right(name, MARKER)
 has_invalid_import_op = lambda name: MARKER in remove_import_op(name)
 has_import_op = lambda name: name.endswith(MARKER) and remove_import_op(name)
 
-_load = ast.Load()  # optimization
-
 class Transformer(ast.NodeTransformer):
 	def __init__(self, *, source=None):
 		self.source = source
 
 	def visit_Attribute(self, node):
-		attr = has_import_op(node.attr)
-		if attr:
-			node.attr = attr
-			as_source = self.attribute_source(node)
-			if type(node.ctx) is not ast.Load:
-				return node
-
-			return ast.copy_location(
-				self.import_call(as_source),
-				node)
+		maybe_transformed = self._transform_attribute_attr(node)
+		if maybe_transformed:
+			return maybe_transformed
 		else:
 			transformed_lhs = self.visit(node.value)
 			return ast.copy_location(
@@ -40,12 +32,41 @@ class Transformer(ast.NodeTransformer):
 					attr=node.attr),
 				node)
 
+	def visit_Name(self, node):
+		is_import = id = has_import_op(node.id)
+		if is_import:
+			return ast.copy_location(self._import_call(id), node)
+		return node
+
+	@staticmethod
+	def _import_call(attribute_source):
+		return ast.Call(
+			func=ast.Name(id=IMPORTER, ctx=_load),
+			args=[ast.Str(attribute_source)],
+			keywords=[])
+
+	@classmethod
+	def _transform_attribute_attr(cls, node):
+		attr = is_import = has_import_op(node.attr)
+
+		if not is_import:
+			return None
+
+		node.attr = attr
+		as_source = cls.attribute_source(node)
+		if type(node.ctx) is not ast.Load:
+			return node
+
+		return ast.copy_location(
+			cls._import_call(as_source),
+			node)
+
 	@classmethod
 	def attribute_source(cls, node: ast.Attribute, _seen_import_op=False):
-		is_import = cls.has_import_op(node)
+		is_import = cls._has_import_op(node)
 		cls._check_node_syntax(node, is_import, _seen_import_op)
 
-		stripped = cls.remove_import_op(node)
+		stripped = cls._remove_import_op(node)
 		if type(node) is ast.Name:
 			return stripped
 
@@ -59,27 +80,8 @@ class Transformer(ast.NodeTransformer):
 		if is_import and seen_import_op:
 			raise SyntaxError('multiple import expressions not allowed')
 
-		if cls.has_invalid_import_op(node):
+		if cls._has_invalid_import_op(node):
 			raise SyntaxError(f'"{IMPORT_OP} only allowed at end of attribute name')
-
-	@staticmethod
-	def strip_import_op(s):
-		seen_import_op = False
-		attrs = []
-		for attr in s.split('.'):
-			stripped = has_import_op(attr)
-
-			if has_invalid_import_op(attr):
-				raise SyntaxError(f'"{IMPORT_OP} only allowed at end of attribute name')
-
-			if stripped and seen_import_op:
-				raise SyntaxError('multiple import expressions not allowed')
-			elif stripped:
-				seen_import_op = True
-				attr = stripped
-
-			attrs.append(attr)
-		return attrs
 
 	def _call_on_name_or_attribute(func):
 		def checker(node):
@@ -93,16 +95,10 @@ class Transformer(ast.NodeTransformer):
 
 		return staticmethod(checker)
 
-	has_import_op = _call_on_name_or_attribute(has_import_op)
-	remove_import_op = _call_on_name_or_attribute(remove_import_op)
-	has_invalid_import_op = _call_on_name_or_attribute(has_invalid_import_op)
-	name_or_attribute = _call_on_name_or_attribute(lambda x: x)
+	_has_import_op = _call_on_name_or_attribute(has_import_op)
+	_remove_import_op = _call_on_name_or_attribute(remove_import_op)
+	_has_invalid_import_op = _call_on_name_or_attribute(has_invalid_import_op)
 
 	del _call_on_name_or_attribute
 
-	@staticmethod
-	def import_call(attribute_source):
-		return ast.Call(
-			func=ast.Name(id=IMPORTER, ctx=_load),
-			args=[ast.Str(attribute_source)],
-			keywords=[])
+_load = ast.Load()  # optimization

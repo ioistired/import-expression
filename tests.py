@@ -41,10 +41,9 @@ def test_eval_exec():
 
 	g = {}
 	ie.exec(textwrap.dedent("""
-		def a():
-			return urllib.parse!.unquote('%3F')
-		def c():
-			return operator!.concat(a(), "these_tests_are_overkill_for_a_debug_cog%3D1")"""
+		a = urllib.parse!.unquote
+		def b():
+			return operator!.concat(a("%3F"), a("these_tests_are_overkill_for_a_debug_cog%3D1"))"""
 	), g)
 
-	assert g['c']() == '?these_tests_are_overkill_for_a_debug_cog=1'
+	assert g['b']() == '?these_tests_are_overkill_for_a_debug_cog=1'
