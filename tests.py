@@ -6,15 +6,33 @@ import import_expression_parser as iep
 
 def test_invalid_syntax():
 	for invalid in (
-		'!foo',
-		'foo!.bar!',
-		'foo.bar!.baz!',
-		'foo.bar!.baz',
+		# arrange this as if ! is binary 1, empty str is 0
+
+		'!a',
+
+		'a.!b',
+		'!a.b',
+		'a!.b!',
+
+		'a.b!.c!',
+		'a!.b!.c',
+
+		'a.b.!c',
+		'a.!b.c',
+		'a.!b.!c'
+		'!a.b.c',
+		'!a.b.!c',
+		'!a.!b.c',
+		'!a.!b.!c'
+
+		'a!b',
+		'ab.bc.d!e',
+		'ab.b!c',
 	):
 		with py.test.raises(SyntaxError):
 			iep.parse(invalid)
 
-def test_eval():
+def test_eval_exec():
 	import textwrap
 
 	import ipaddress
