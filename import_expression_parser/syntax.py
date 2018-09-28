@@ -11,10 +11,10 @@ is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string ==
 
 NEWLINES = {NEWLINE, tokenize_.NL}
 
-def fix_syntax(s, *, include_import_statement):
+def fix_syntax(s):
 	tokens = tokenize(s)  # TODO is there a better way than tokenizing and then untokenizing? don't think so?
 	untokenizer = Untokenizer()
-	out = untokenizer.untokenize(tokens, include_import_statement=include_import_statement)
+	out = untokenizer.untokenize(tokens)
 
 	if untokenizer.encoding is not None:
 		out = out.encode(untokenizer.encoding)
@@ -45,10 +45,7 @@ class Untokenizer:
 		if col_offset:
 			self.tokens.append(" " * col_offset)
 
-	def untokenize(self, iterable, *, include_import_statement):
-		if include_import_statement:
-			self.tokens.append(HEADER)
-
+	def untokenize(self, iterable):
 		for token in iterable:
 			if token.type == tokenize_.ENCODING:
 				self.encoding = token.value

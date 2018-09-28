@@ -13,3 +13,23 @@ def parse(source, *, mode='eval', filename=_constants.DEFAULT_FILENAME):
 	fixed = _fix_syntax(source)
 	tree = _ast.parse(fixed, filename,  mode)
 	return parse_ast(tree, source=fixed)
+
+def eval(str, globals=None, locals=None):
+	globals, locals = _parse_eval_exec_args(globals, locals)
+	return _builtins.eval(compile(parse(str, mode='eval'), _constants.DEFAULT_FILENAME, 'eval'), globals, locals)
+
+def exec(str, globals=None, locals=None):
+	globals, locals = _parse_eval_exec_args(globals, locals)
+	_builtins.eval(compile(parse(str, mode='exec'), _constants.DEFAULT_FILENAME, 'exec'), globals, locals)
+
+def _parse_eval_exec_args(globals, locals):
+	if globals is None:  # can't use truthiness because {} is falsy
+		globals = _builtins.globals()
+
+	globals.update({
+		_constants.IMPORTER: _import_module})
+
+	if locals is None:
+		locals = globals
+
+	return globals, locals
