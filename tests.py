@@ -2,7 +2,7 @@ import builtins
 
 import py.test
 
-import import_expression_parser as iep
+import import_expression as ie
 
 def test_invalid_syntax():
 	for invalid in (
@@ -30,17 +30,17 @@ def test_invalid_syntax():
 		'ab.b!c',
 	):
 		with py.test.raises(SyntaxError):
-			iep.parse(invalid)
+			ie.parse(invalid)
 
 def test_eval_exec():
 	import textwrap
 
 	import ipaddress
-	assert iep.eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
-	assert iep.eval('urllib.parse!.quote("?")') == '%3F'
+	assert ie.eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
+	assert ie.eval('urllib.parse!.quote("?")') == '%3F'
 
 	g = {}
-	iep.exec(textwrap.dedent("""
+	ie.exec(textwrap.dedent("""
 		def a():
 			return urllib.parse!.unquote('%3F')
 		def c():
