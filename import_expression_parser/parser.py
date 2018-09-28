@@ -14,9 +14,6 @@ remove_import_op = lambda name: remove_string_right(name, MARKER)
 has_invalid_import_op = lambda name: MARKER in remove_import_op(name)
 has_import_op = lambda name: name.endswith(MARKER) and remove_import_op(name)
 
-def _tokenize(s):
-	return tokenize.tokenize(io.BytesIO(s.encode('utf-8')).readline)
-
 _load = ast.Load()  # optimization
 
 class Transformer(ast.NodeTransformer):

@@ -18,27 +18,15 @@ def test_eval():
 	import textwrap
 
 	import ipaddress
-	assert eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
-	assert eval('urllib.parse!.quote("!")') == '%3F'
+	assert iep.eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
+	assert iep.eval('urllib.parse!.quote("?")') == '%3F'
 
 	g = {}
-	exec(textwrap.dedent("""
-		def foo():
+	iep.exec(textwrap.dedent("""
+		def a():
 			return urllib.parse!.unquote('%3F')
-		def bar():
-			return operator!.concat(foo(), "these_tests_are_overkill_for_a_debug_cog%3D1")"""
+		def c():
+			return operator!.concat(a(), "these_tests_are_overkill_for_a_debug_cog%3D1")"""
 	), g)
 
-	assert g['bar']() == '?these_tests_are_overkill_for_a_debug_cog=1'
-
-def eval(str, globals=None, locals=None):
-	from importlib import import_module
-
-	globals, locals = _parse_eval_exec_args(globals, locals)
-
-	globals = {
-		iep.IMPORTER: import_module}
-	return builtins.eval(compile(iep.parse(str, include_import_header=False), '<eval test case>', 'eval'), globals)
-
-def exec(str, globals, locals):
-	builtins.exec(compile(iep.parse(str), '<exec test case>', 'exec'), globals, locals)
+	assert g['c']() == '?these_tests_are_overkill_for_a_debug_cog=1'
