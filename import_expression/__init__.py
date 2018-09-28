@@ -26,7 +26,7 @@ def parse(source: str, *, mode='eval', filename=_constants.DEFAULT_FILENAME):
 	"""
 	fixed = _fix_syntax(source)
 	tree = _ast.parse(fixed, filename,  mode)
-	return parse_ast(tree, source=fixed)
+	return _parse_ast(tree, source=fixed)
 
 def eval(source: str, globals=None, locals=None):
 	"""evaluate Import Expression Python™ in the given globals and locals"""
