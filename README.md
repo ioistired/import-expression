@@ -20,7 +20,7 @@ del deque
 
 ```py
 >>> import import_expression
->>> eval('collections!.Counter("bccdddeeee")')
+>>> import_expression.eval('collections!.Counter("bccdddeeee")')
 Counter({'e': 4, 'd': 3, 'c': 2, 'b': 1})
 ```
 
