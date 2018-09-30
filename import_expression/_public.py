@@ -26,7 +26,7 @@ def parse(source: str, *, mode='eval', filename=_constants.DEFAULT_FILENAME):
 
 def compile(source: str, filename=_constants.DEFAULT_FILENAME, mode='eval'):
 	"""compile a string containing import expressions to a code object"""
-	return compile(parse(source, filename=filename, mode=mode), filename, mode)
+	return _builtins.compile(parse(source, filename=filename, mode=mode), filename, mode)
 
 def eval(source: str, globals=None, locals=None):
 	"""evaluate Import Expression Python™ in the given globals and locals"""
