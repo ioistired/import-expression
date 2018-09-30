@@ -1,7 +1,8 @@
 .py[cod]
 __pycache__
 
-*.swp
+dist/
+*.egg-info/
 
 .pytest_cache
 .coverage
@@ -9,3 +10,5 @@ __pycache__
 
 .venv/
 venv/
+
+*.swp
