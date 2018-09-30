@@ -1,6 +1,7 @@
 import ast as _ast
 import builtins as _builtins
-from importlib import import_module as _import_module
+import importlib as _importlib
+import inspect as _inspect
 
 from . import _constants
 from ._syntax import fix_syntax as _fix_syntax  # this is for internal use
@@ -20,13 +21,13 @@ def parse(source: str, *, mode='eval', filename=_constants.DEFAULT_FILENAME):
 	Filename is used in tracebacks, in case of invalid syntax or runtime exceptions.
 	"""
 	fixed = _fix_syntax(source)
-	tree = _ast.parse(fixed, filename,  mode)
+	tree = _ast.parse(fixed, filename, mode)
 	return _parse_ast(tree, source=fixed)
 
 def eval(source: str, globals=None, locals=None):
 	"""evaluate Import Expression Python™ in the given globals and locals"""
-
 	globals, locals = _parse_eval_exec_args(globals, locals)
+
 	return _builtins.eval(compile(parse(source, mode='eval'), _constants.DEFAULT_FILENAME, 'eval'), globals, locals)
 
 def exec(source, globals=None, locals=None):
@@ -41,12 +42,10 @@ def exec(source, globals=None, locals=None):
 
 def _parse_eval_exec_args(globals, locals):
 	if globals is None:  # can't use truthiness because {} is falsy
-		# cannot use builtins.globals() because thats the
-		# globals for this module
 		globals = {}
 
 	globals.update({
-		_constants.IMPORTER: _import_module})
+		_constants.IMPORTER: _importlib.import_module})
 
 	if locals is None:
 		locals = globals

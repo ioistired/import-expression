@@ -12,17 +12,14 @@ is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string ==
 
 NEWLINES = {NEWLINE, tokenize_.NL}
 
-class TokenError(tokenize_.TokenError):
-	pass
-
 def fix_syntax(s):
 	tokens = tokenize(s)  # TODO is there a better way than tokenizing and then untokenizing? don't think so?
 	untokenizer = Untokenizer()
 	try:
 		out = untokenizer.untokenize(tokens)
 	except tokenize_.TokenError as ex:
-		# so that callers can catch this error and distinguish it from other TokenErrors
-		raise TokenError(*ex.args)
+		# to be consistent with ast.parse/compile
+		raise SyntaxError(*ex.args)
 
 	if untokenizer.encoding is not None:
 		out = out.encode(untokenizer.encoding)
