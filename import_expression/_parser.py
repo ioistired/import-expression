@@ -1,6 +1,6 @@
 import ast
 
-from .constants import *
+from ._constants import *
 
 parse_ast = lambda root_node, **kwargs: ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
 
