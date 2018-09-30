@@ -29,7 +29,7 @@ To change this, pass in a filename via the `filename` kwarg.
 
 ## Limitations / Known Issues
 
-* Invalid syntax, such as `!a`, `urllib!.parse!`, and `def a(b!): pass`, isnot yet detected.
+* Some invalid syntax, such as `!a`, `a!b`, `urllib!.parse!`, and `def a(b!): pass`, is not yet detected.
 
 ## FAQ
 
@@ -42,6 +42,7 @@ To change this, pass in a filename via the `filename` kwarg.
   > devon#4089: both at the end and start of the string \
   > lambda#0987: yeah and [*it's*] also a pain to type on mobile so ok \
   > devon#4089: \<\<x\>\> is slightly less grating \
+
   For context, the originally proposed syntax was \<\<x\>\>.
 
 ## [License](/LICENSE)
