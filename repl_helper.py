@@ -1,3 +1,6 @@
+# run this like `python3 -i repl_helper.py`
+# to get a repl with everything imported
+
 import ast
 
 from astpp import parseprint
