@@ -10,5 +10,5 @@ jobs:
 script:
   - pip install coveralls pytest pytest-cov
   - ./setup.py test
-after_success:
+after_script:
   - coveralls
