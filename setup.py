@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 
-import distutils.log  # stdlib not using logging smh
 import importlib.util
+import glob
 import logging
 import os
 import os.path
@@ -33,20 +33,23 @@ with open('README.md') as f:
 command_classes = {}
 
 class ScriptCommand(type):
-	def __new__(metacls, clsname, bases, attrs, *, name, description='', command: typing.Sequence[str]):
+	def __new__(metacls, clsname, bases, attrs, *, name, description='', commands: typing.Sequence[typing.Tuple[str, ...]]):
 		bases += (setuptools.Command,)
 		cls = type.__new__(metacls, name, bases, attrs)
 
-		cls.__command = command
-
+		cls.__commands = commands
 		cls.description = description
 		cls.user_options = []
 
 		def run(self) -> typing.NoReturn:
-			self.announce(repr(self.__command), level=distutils.log.INFO)
-			p = subprocess.Popen(self.__command)
-			status = p.wait()
-			sys.exit(status)
+			for command in self.__commands:
+				logging.info(repr(command))
+				p = subprocess.Popen(command)
+				status = p.wait()
+				if status != 0:
+					sys.exit(status)
+
+			sys.exit(0)
 
 		def noop(*args, **kwargs):
 			pass
@@ -61,7 +64,7 @@ class UnitTestCommand(
 	metaclass=ScriptCommand,
 	name='test',
 	description='run unit tests',
-	command='pytest tests.py --cov import_expression --cov-report html'.split()
+	commands=('pytest tests.py --cov import_expression --cov-report html'.split(),)
 ):
 	pass
 
@@ -69,7 +72,10 @@ class ReleaseCommand(
 	metaclass=ScriptCommand,
 	name='release',
 	description='build and upload a release',
-	command=(sys.executable, __file__, 'sdist', 'upload')
+	commands=(
+		(sys.executable, __file__, 'bdist_wheel'),
+		('twine', 'upload', glob.glob(os.path.join(os.path.realpath(__file__), 'dist/*'))),
+	)
 ):
 	pass
 
@@ -77,7 +83,12 @@ class ReplCommand(
 	metaclass=ScriptCommand,
 	name='repl',
 	description='start a REPL that supports top level import expressions',
-	command=(sys.executable, '-ic', 'import import_expression.patch; import_expression.patch.patch(globals())')
+	commands=(
+		sys.executable,
+		'-ic',
+		'import import_expression.patch\n'
+		'import_expression.patch.patch(globals())'
+	)
 ):
 	pass
 
