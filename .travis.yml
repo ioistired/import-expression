@@ -9,6 +9,6 @@ jobs:
       sudo: required
 script:
   - pip install coveralls pytest pytest-cov
-  - py.test --cov=import_expression_parser tests.py
+  - ./setup.py test
 after_success:
   - coveralls
