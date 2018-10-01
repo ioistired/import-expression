@@ -1,6 +1,7 @@
 .py[cod]
 __pycache__
 
+build/
 dist/
 *.egg-info/
 
