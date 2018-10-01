@@ -2,9 +2,10 @@ import ast as _ast
 import builtins as _builtins
 import importlib as _importlib
 import inspect as _inspect
+import typing as _typing
 
 from . import _constants
-from ._syntax import fix_syntax as _fix_syntax  # this is for internal use
+from ._syntax import fix_syntax as _fix_syntax
 from ._parser import parse_ast as _parse_ast
 
 def parse(source: str, *, mode='eval', filename=_constants.DEFAULT_FILENAME):
@@ -24,9 +25,12 @@ def parse(source: str, *, mode='eval', filename=_constants.DEFAULT_FILENAME):
 	tree = _ast.parse(fixed, filename, mode)
 	return _parse_ast(tree, source=fixed)
 
-def compile(source: str, filename=_constants.DEFAULT_FILENAME, mode='eval'):
-	"""compile a string containing import expressions to a code object"""
-	return _builtins.compile(parse(source, filename=filename, mode=mode), filename, mode)
+def compile(source: _typing.Union[_ast.AST, str], filename=_constants.DEFAULT_FILENAME, mode='eval'):
+	"""compile a string or AST containing import expressions to a code object"""
+	if isinstance(source, str):
+		source = parse(source, filename=filename, mode=mode)
+
+	return _builtins.compile(source, filename, mode)
 
 def eval(source: str, globals=None, locals=None):
 	"""evaluate Import Expression Python™ in the given globals and locals"""
@@ -41,7 +45,7 @@ def exec(source, globals=None, locals=None):
 	Therefore, if no globals are provided, the results will be discarded!
 	"""
 	globals, locals = _parse_eval_exec_args(globals, locals)
-	_builtins.eval(compile(parse(source, mode='exec'), _constants.DEFAULT_FILENAME,'exec'), globals, locals)
+	_builtins.eval(compile(parse(source, mode='exec'), _constants.DEFAULT_FILENAME, 'exec'), globals, locals)
 
 def _parse_eval_exec_args(globals, locals):
 	if globals is None:  # can't use truthiness because {} is falsy
