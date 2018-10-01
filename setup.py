@@ -71,17 +71,6 @@ class UnitTestCommand(
 ):
 	pass
 
-class ReleaseCommand(
-	metaclass=ScriptCommand,
-	name='release',
-	description='build and upload a release',
-	commands=(
-		(sys.executable, __file__, 'bdist_wheel'),
-		('twine', 'upload', *glob.glob(os.path.join(HERE, 'dist/*'))),
-	)
-):
-	pass
-
 class ReplCommand(
 	metaclass=ScriptCommand,
 	name='repl',
@@ -91,6 +80,17 @@ class ReplCommand(
 		'-ic',
 		'import import_expression.patch\n'
 		'import_expression.patch.patch(globals())'
+	)
+):
+	pass
+
+class ReleaseCommand(
+	metaclass=ScriptCommand,
+	name='release',
+	description='build and upload a release',
+	commands=(
+		(sys.executable, __file__, 'bdist_wheel'),
+		('twine', 'upload', *glob.glob(os.path.join(HERE, 'dist/*'))),
 	)
 ):
 	pass
