@@ -11,6 +11,9 @@ import subprocess
 import sys
 import typing
 
+logging.basicConfig(level=logging.INFO)
+HERE = os.path.realpath(os.path.dirname(__file__))
+
 def import_by_path(name, path):
 	spec = importlib.util.spec_from_file_location(name, path)
 	module = importlib.util.module_from_spec(spec)
@@ -74,7 +77,7 @@ class ReleaseCommand(
 	description='build and upload a release',
 	commands=(
 		(sys.executable, __file__, 'bdist_wheel'),
-		('twine', 'upload', glob.glob(os.path.join(os.path.realpath(__file__), 'dist/*'))),
+		('twine', 'upload', *glob.glob(os.path.join(HERE, 'dist/*'))),
 	)
 ):
 	pass
