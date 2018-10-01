@@ -17,7 +17,7 @@ def patch(globals=sys.modules['__main__'].__dict__):
 	Both cases will run in the context of the given globals dict, or if None, globals produced by statements will be saved to the __main__ module
 	"""
 	if not _is_tty():
-		raise RuntimeException(f'patch() only works at the REPL, where stdin is a TTY.')
+		raise RuntimeError(f'patch() only works at the REPL, where stdin is a TTY.')
 
 	sys.excepthook = _make_excepthook(globals)
 
