@@ -27,9 +27,34 @@ Counter({'e': 4, 'd': 3, 'c': 2, 'b': 1})
 By default, the filename for `SyntaxError`s is `<string>`.
 To change this, pass in a filename via the `filename` kwarg.
 
+### Monkey Patching the REPL
+
+```py
+>>> urllib.parse!.quote
+  File "<stdin>", line 1
+    urllib.parse!.quote
+                ^
+SyntaxError: invalid syntax
+>>> import import_expression.patch
+>>> import_expression.patch.patch(globals())
+>>> urllib.parse!.quote
+<function quote at 0xdeadbeef>
+```
+
+For convenience, you can also add the following two lines to your `sitecustomize.py`:
+
+```py
+import import_expression.patch
+import_expression.patch.patch()
+```
+
+And all REPL sessions will use the import expression syntax.
+
 ## Limitations / Known Issues
 
 * Some invalid syntax, such as `!a`, `a!b`, `urllib!.parse!`, and `def a(b!): pass`, is not yet detected.
+* Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals
+  without an explicit `globals` argument.
 
 ## FAQ
 
@@ -45,8 +70,8 @@ To change this, pass in a filename via the `filename` kwarg.
 
   For context, the originally proposed syntax was \<\<x\>\>.
 
-## [License](/LICENSE)
+## [License](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE)
 
-Copyright © 2018 Benjamin Mintz <bmintz@protonmail.com>. All Rights Reserved. \
-Licensed under this new hipster cool cat license called the Charity Public License. \
+Copyright © 2018 Benjamin Mintz <<bmintz@protonmail.com>>. All Rights Reserved.
+Licensed under this new hipster cool cat license called the [Charity Public License v1.10.0](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE).
 If you are not a hipster cool cat, please contact me to arrange a private license.
