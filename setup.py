@@ -67,7 +67,7 @@ class UnitTestCommand(
 	metaclass=ScriptCommand,
 	name='test',
 	description='run unit tests',
-	commands=('pytest tests.py --cov import_expression --cov-report html'.split(),)
+	commands=('pytest tests.py --cov import_expression --cov-config .coveragerc --cov-report html'.split(),)
 ):
 	pass
 

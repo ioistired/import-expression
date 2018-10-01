@@ -1,0 +1,6 @@
+[run]
+omit =
+	import_expression/__init__.py
+	import_expression/_constants.py
+	import_expression/patch.py
+	import_expression/version.py
