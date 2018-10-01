@@ -2,7 +2,6 @@
 # encoding: utf-8
 
 import importlib.util
-import glob
 import logging
 import os
 import os.path
@@ -90,7 +89,7 @@ class ReleaseCommand(
 	description='build and upload a release',
 	commands=(
 		(sys.executable, __file__, 'bdist_wheel'),
-		('twine', 'upload', *glob.glob(os.path.join(HERE, 'dist/*'))),
+		('twine', 'upload', 'dist/*'),
 	)
 ):
 	pass
