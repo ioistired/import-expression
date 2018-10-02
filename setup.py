@@ -43,7 +43,7 @@ class ScriptCommand(type):
 		cls.description = description
 		cls.user_options = []
 
-		def run(self) -> typing.NoReturn:
+		def run(self):
 			for command in self.__commands:
 				logging.info(repr(command))
 				p = subprocess.Popen(command)
