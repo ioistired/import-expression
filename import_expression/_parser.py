@@ -12,12 +12,32 @@ def remove_string_right(haystack, needle):
 	return haystack
 
 remove_import_op = lambda name: remove_string_right(name, MARKER)
+has_any_import_op = lambda name: MARKER in name
 has_invalid_import_op = lambda name: MARKER in remove_import_op(name)
-has_import_op = lambda name: name.endswith(MARKER) and remove_import_op(name)
+has_valid_import_op = lambda name: name.endswith(MARKER) and remove_import_op(name)
 
 class Transformer(ast.NodeTransformer):
-	def __init__(self, *, source=None):
-		self.source = source
+	def __init__(self, *, filename=None):
+		self.filename = filename
+
+	def _syntax_error(self, message, node):
+		# last two items in the tuple are column offset and source code text
+		return SyntaxError(message, (self.filename, node.lineno, None, None))
+
+	def generic_visit(self, node):
+		if isinstance(node, (ast.Attribute, ast.Name, ast.Str)):
+			# these nodes will be checked by our custom methods
+			return super().generic_visit(node)
+
+		# if we reached this point, we encountered a node where no import operators are allowed
+		for field, value in ast.iter_fields(node):
+			if isinstance(value, str) and has_any_import_op(value):
+				raise self._syntax_error(
+					'import expressions are only allowed in variables and attributes',
+					node
+				) from None
+
+		return super().generic_visit(node)
 
 	def visit_Attribute(self, node):
 		maybe_transformed = self._transform_attribute_attr(node)
@@ -33,7 +53,7 @@ class Transformer(ast.NodeTransformer):
 				node)
 
 	def visit_Name(self, node):
-		is_import = id = has_import_op(node.id)
+		is_import = id = has_valid_import_op(node.id)
 		if is_import:
 			return ast.copy_location(self._import_call(id), node)
 		return node
@@ -45,43 +65,40 @@ class Transformer(ast.NodeTransformer):
 			args=[ast.Str(attribute_source)],
 			keywords=[])
 
-	@classmethod
-	def _transform_attribute_attr(cls, node):
-		attr = is_import = has_import_op(node.attr)
+	def _transform_attribute_attr(self, node):
+		attr = is_import = has_valid_import_op(node.attr)
 
 		if not is_import:
 			return None
 
 		node.attr = attr
-		as_source = cls.attribute_source(node)
+		as_source = self.attribute_source(node)
 		if type(node.ctx) is not ast.Load:
 			return node
 
 		return ast.copy_location(
-			cls._import_call(as_source),
+			self._import_call(as_source),
 			node)
 
-	@classmethod
-	def attribute_source(cls, node: ast.Attribute, _seen_import_op=False):
-		is_import = cls._has_import_op(node)
-		cls._check_node_syntax(node, is_import, _seen_import_op)
+	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
+		is_import = self._has_valid_import_op(node)
+		self._check_node_syntax(node, is_import, _seen_import_op)
 
-		stripped = cls._remove_import_op(node)
+		stripped = self._remove_import_op(node)
 		if type(node) is ast.Name:
 			return stripped
 
-		lhs = cls.attribute_source(node.value, is_import or _seen_import_op)
+		lhs = self.attribute_source(node.value, is_import or _seen_import_op)
 		rhs = stripped
 
 		return lhs + '.' + rhs
 
-	@classmethod
-	def _check_node_syntax(cls, node, is_import, seen_import_op):
+	def _check_node_syntax(self, node, is_import, seen_import_op):
 		if is_import and seen_import_op:
-			raise SyntaxError('multiple import expressions not allowed')
+			raise self._syntax_error('multiple import expressions not allowed', node) from None
 
-		if cls._has_invalid_import_op(node):
-			raise SyntaxError(f'"{IMPORT_OP} only allowed at end of attribute name')
+		if self._has_invalid_import_op(node):
+			raise self._syntax_error(f'"{IMPORT_OP}" only allowed at end of attribute name', node) from None
 
 	def _call_on_name_or_attribute(func):
 		def checker(node):
@@ -90,12 +107,12 @@ class Transformer(ast.NodeTransformer):
 			elif type(node) is ast.Name:
 				to_check = node.id
 			else:
-				raise TypeError(f'node must be an Attribute or Name node, not {type(node)}') from None
+				raise TypeError(f'node must be an Attribute or Name node, not {type(node)}')
 			return func(to_check)
 
 		return staticmethod(checker)
 
-	_has_import_op = _call_on_name_or_attribute(has_import_op)
+	_has_valid_import_op = _call_on_name_or_attribute(has_valid_import_op)
 	_remove_import_op = _call_on_name_or_attribute(remove_import_op)
 	_has_invalid_import_op = _call_on_name_or_attribute(has_invalid_import_op)
 

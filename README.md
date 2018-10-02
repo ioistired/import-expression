@@ -52,7 +52,7 @@ And all REPL sessions will use the import expression syntax.
 
 ## Limitations / Known Issues
 
-* Some invalid syntax, such as `!a`, `a!b`, `urllib!.parse!`, and `def a(b!): pass`, is not yet detected.
+* Some invalid syntax, such as `!a`, `a!b`, `urllib!.parse!` is not yet detected.
 * Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals
   without an explicit `globals` argument.
 

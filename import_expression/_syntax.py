@@ -7,7 +7,6 @@ from ._constants import *
 
 tokenize_.TokenInfo.value = property(lambda self: self.string)
 
-IMPORT_OP = '!'
 is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string == IMPORT_OP
 
 NEWLINES = {NEWLINE, tokenize_.NL}
@@ -26,7 +25,7 @@ def fix_syntax(s, filename=DEFAULT_FILENAME):
 		except IndexError:
 			source_line = None
 
-		raise SyntaxError(message, (filename, lineno, offset, source_line))
+		raise SyntaxError(message, (filename, lineno, offset, source_line)) from None
 
 	if untokenizer.encoding is not None:
 		out = out.encode(untokenizer.encoding)

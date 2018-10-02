@@ -23,7 +23,7 @@ def parse(source: str, *, mode='eval', filename=_constants.DEFAULT_FILENAME):
 	"""
 	fixed = _fix_syntax(source)
 	tree = _ast.parse(fixed, filename, mode)
-	return _parse_ast(tree, source=fixed)
+	return _parse_ast(tree, filename=filename)
 
 def compile(source: _typing.Union[_ast.AST, str], filename=_constants.DEFAULT_FILENAME, mode='eval'):
 	"""compile a string or AST containing import expressions to a code object"""

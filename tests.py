@@ -60,9 +60,12 @@ def test_eval_exec():
 		x = x + 1
 
 		def bar():
-			return urllib.parse!.quote('?')
+			return urllib.parse!.unquote('this%20will%20never%20be%20merged%20into%20jishaku%2C%20will%20it%20%3A%28')
+
+		# the hanging indent on the following line is intentional
+		
 
 		return bar()"""
 	), g)
 
-	assert g['foo'](1) == urllib.parse.quote('?')
+	assert g['foo'](1) == 'this will never be merged into jishaku, will it :('
