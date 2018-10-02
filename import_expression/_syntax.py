@@ -12,14 +12,21 @@ is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string ==
 
 NEWLINES = {NEWLINE, tokenize_.NL}
 
-def fix_syntax(s):
+def fix_syntax(s, filename=DEFAULT_FILENAME):
 	tokens = tokenize(s)  # TODO is there a better way than tokenizing and then untokenizing? don't think so?
 	untokenizer = Untokenizer()
 	try:
 		out = untokenizer.untokenize(tokens)
 	except tokenize_.TokenError as ex:
-		# to be consistent with ast.parse/compile
-		raise SyntaxError(*ex.args)
+		# TODO add lineno info from the rest of ex.args
+		message, (lineno, offset) = ex.args
+
+		try:
+			source_line = s.splitlines()[lineno-1]
+		except IndexError:
+			source_line = None
+
+		raise SyntaxError(message, (filename, lineno, offset, source_line))
 
 	if untokenizer.encoding is not None:
 		out = out.encode(untokenizer.encoding)
@@ -46,21 +53,42 @@ class Untokenizer:
 		if row_offset:
 			self.tokens.append("\\\n" * row_offset)
 			self.prev_col = 0
+
 		col_offset = col - self.prev_col
-		if col_offset:
-			self.tokens.append(" " * col_offset)
+		self.tokens.append(" " * col_offset)
 
 	def untokenize(self, iterable):
+		indents = []
+		startline = False
 		for token in iterable:
 			if token.type == tokenize_.ENCODING:
 				self.encoding = token.value
 				continue
 
-			if token.type == ENDMARKER:
+			if token.type == tokenize_.ENDMARKER:
 				break
 
-			if self._untokenize_whitespace(token):
+			# XXX this abomination comes from tokenize.py
+			# i tried to move it to a separate method but failed
+
+			if token.type == tokenize_.INDENT:
+				indents.append(token.value)
 				continue
+			elif token.type == tokenize_.DEDENT:
+				indents.pop()
+				self.prev_row, self.prev_col = token.end
+				continue
+			elif token.type in NEWLINES:
+				startline = True
+			elif startline and indents:
+				indent = indents[-1]
+				start_row, start_col = token.start
+				if start_col >= len(indent):
+					self.tokens.append(indent)
+					self.prev_col = len(indent)
+				startline = False
+
+			# end abomination
 
 			self.add_whitespace(token.start)
 
@@ -70,34 +98,11 @@ class Untokenizer:
 				self.tokens.append(token.value)
 
 			self.prev_row, self.prev_col = token.end
-			if type in NEWLINES:
+			if token.type in NEWLINES:
 				self.prev_row += 1
 				self.prev_col = 0
 
 		return "".join(self.tokens)
-
-	def _untokenize_whitespace(self, token):
-		if token.type == INDENT:
-			self.indents.append(token.value)
-			return True
-
-		elif token.type == DEDENT:
-			self.indents.pop()
-			self.prev_row, self.prev_col = token.end
-			return True
-
-		elif token.type in NEWLINES:
-			self.startline = True
-
-		elif self.startline and self.indents:
-			indent = self.indents[-1]
-			start_row, start_col = token.start
-			if start_row >= len(indent):
-				self.tokens.append(indent)
-				self.prev_col = len(indent)
-			self.startline = False
-
-		return False
 
 def tokenize(string):
 	return tokenize_.tokenize(io.BytesIO(string.encode('utf-8')).readline)
