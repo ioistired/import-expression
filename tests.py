@@ -4,30 +4,46 @@ import py.test
 
 import import_expression as ie
 
-def test_invalid_syntax():
+invalid_attribute_cases = (
+	# arrange this as if ! is binary 1, empty str is 0
+	'!a',
+
+	'a.!b',
+	'!a.b',
+	'a!.b!',
+
+	'a.b!.c!',
+	'a!.b!.c',
+
+	'a.b.!c',
+	'a.!b.c',
+	'a.!b.!c'
+	'!a.b.c',
+	'!a.b.!c',
+	'!a.!b.c',
+	'!a.!b.!c'
+
+	'a!b',
+	'ab.bc.d!e',
+	'ab.b!c',
+)
+
+def test_valid_strings():
+	for invalid in invalid_attribute_cases:
+		valid = f'"{invalid}"'
+		ie.parse(valid)
+
+def test_invalid_attribute_syntax():
+	for invalid in invalid_attribute_cases:
+		with py.test.raises(SyntaxError):
+			ie.parse(invalid)
+
+def test_invalid_non_attribute_syntax():
 	for invalid in (
-		# arrange this as if ! is binary 1, empty str is 0
-
-		'!a',
-
-		'a.!b',
-		'!a.b',
-		'a!.b!',
-
-		'a.b!.c!',
-		'a!.b!.c',
-
-		'a.b.!c',
-		'a.!b.c',
-		'a.!b.!c'
-		'!a.b.c',
-		'!a.b.!c',
-		'!a.!b.c',
-		'!a.!b.!c'
-
-		'a!b',
-		'ab.bc.d!e',
-		'ab.b!c',
+		'def foo(x!): pass',
+		'class X!: pass',
+		'def fo!o(y): pass',
+		'class X(Y!): pass',
 	):
 		with py.test.raises(SyntaxError):
 			ie.parse(invalid)
