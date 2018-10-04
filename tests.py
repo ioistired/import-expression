@@ -35,6 +35,7 @@ def test_valid_strings():
 
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
+		print(invalid)
 		with py.test.raises(SyntaxError):
 			ie.parse(invalid)
 
@@ -49,11 +50,13 @@ def test_invalid_non_attribute_syntax():
 			ie.parse(invalid)
 
 def test_eval_exec():
-	import textwrap
-
+	import collections
 	import ipaddress
+	import textwrap
+	import urllib.parse
+
 	assert ie.eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
-	assert ie.eval('urllib.parse!.quote("?")') == '%3F'
+	assert ie.eval('urllib.parse!.quote("?")') == urllib.parse.quote('?')
 
 	g = {}
 	ie.exec(textwrap.dedent("""
@@ -64,8 +67,6 @@ def test_eval_exec():
 
 	assert g['b']() == '?these_tests_are_overkill_for_a_debug_cog=1'
 
-
-	import urllib.parse
 
 	g = {}
 	ie.exec(textwrap.dedent("""
@@ -85,3 +86,15 @@ def test_eval_exec():
 	), g)
 
 	assert g['foo'](1) == 'this will never be merged into jishaku, will it :('
+	assert ie.eval('collections!.Counter(urllib.parse!.quote("foo"))') == dict(f=1, o=2)
+
+	class AttributeBox:
+		pass
+
+	g = {'x': AttributeBox()}
+
+	ie.exec('x.y = 1', g)
+	assert g['x'].y == 1
+
+	ie.exec('del x.y')
+	assert not hasattr(g['x'], 'y')
