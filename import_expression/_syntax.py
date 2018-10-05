@@ -9,71 +9,99 @@ tokenize_.TokenInfo.value = property(lambda self: self.string)
 
 is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string == IMPORT_OP
 
-def fix_syntax(source):
-	syntax_fixer = SyntaxFixer(source)
-	return syntax_fixer.fix_syntax()
+NEWLINES = {NEWLINE, tokenize_.NL}
 
-class SyntaxFixer:
-	def __init__(self, source: str):
-		self.source = source
+def fix_syntax(s, filename=DEFAULT_FILENAME):
+	tokens = tokenize(s)  # TODO is there a better way than tokenizing and then untokenizing? don't think so?
+	untokenizer = Untokenizer()
+	try:
+		out = untokenizer.untokenize(tokens)
+	except tokenize_.TokenError as ex:
+		# TODO add lineno info from the rest of ex.args
+		message, (lineno, offset) = ex.args
 
-	def fix_syntax(self):
-		patched_tokens = self.patch_tokens()
 		try:
-			return tokenize_.untokenize(patched_tokens)
-		except ValueError:
-			raise SyntaxError('illegal import op') from None
+			source_line = s.splitlines()[lineno-1]
+		except IndexError:
+			source_line = None
 
-	def patch_tokens(self):
-		tokens = tokenize(self.source)
-		patched_tokens = []
-		self.prev_token = None
+		raise SyntaxError(message, (filename, lineno, offset, source_line)) from None
 
-		self.col_offset = 0  # tracks how many chars we've added to the current row
-		self.prev_row = 0
+	if untokenizer.encoding is not None:
+		out = out.encode(untokenizer.encoding)
 
-		for token in tokens:
-			patched_tokens.append(self.patch_token(token))
+	return out
 
-			if self.end_row > self.prev_row:
-				self.col_offset = 0
+# taken from Lib/tokenize_.py at 3.6
+# TODO find out if license is compat with Charity Public License
+class Untokenizer:
+	def __init__(self):
+		self.tokens = collections.deque()
+		self.indents = collections.deque()
+		self.prev_row = 1
+		self.prev_col = 0
+		self.startline = False
+		self.encoding = None
 
-			self.prev_token = token
-			self.prev_row, self.prev_col = self.prev_token.end
+	def add_whitespace(self, start):
+		row, col = start
+		if row < self.prev_row or row == self.prev_row and col < self.prev_col:
+			raise ValueError("start ({},{}) precedes previous end ({},{})"
+							 .format(row, col, self.prev_row, self.prev_col))
+		row_offset = row - self.prev_row
+		if row_offset:
+			self.tokens.append("\\\n" * row_offset)
+			self.prev_col = 0
 
-		return patched_tokens
+		col_offset = col - self.prev_col
+		self.tokens.append(" " * col_offset)
 
-	def patch_token(self, token):
-		self.start_row, self.start_col = token.start
-		self.end_row, self.end_col = token.end
+	def untokenize(self, iterable):
+		indents = []
+		startline = False
+		for token in iterable:
+			if token.type == tokenize_.ENCODING:
+				self.encoding = token.value
+				continue
 
-		if is_import(token):
-			new_token = self.patch_import_token(token)
-		else:
-			new_token = self.patch_non_import_token(token)
+			if token.type == tokenize_.ENDMARKER:
+				break
 
-		return new_token
+			# XXX this abomination comes from tokenize.py
+			# i tried to move it to a separate method but failed
 
-	def patch_import_token(self, token):
-		new_end_row, new_end_col = token.end
+			if token.type == tokenize_.INDENT:
+				indents.append(token.value)
+				continue
+			elif token.type == tokenize_.DEDENT:
+				indents.pop()
+				self.prev_row, self.prev_col = token.end
+				continue
+			elif token.type in NEWLINES:
+				startline = True
+			elif startline and indents:
+				indent = indents[-1]
+				start_row, start_col = token.start
+				if start_col >= len(indent):
+					self.tokens.append(indent)
+					self.prev_col = len(indent)
+				startline = False
 
-		new_value = MARKER
-		self.col_offset += len(MARKER) - len(IMPORT_OP)  # since we're not including the import op itself
-		new_end_col += self.col_offset
+			# end abomination
 
-		return token._replace(string=new_value, end=(self.end_row, new_end_col))
+			self.add_whitespace(token.start)
 
-	def patch_non_import_token(self, token):
-		if self.prev_token is None or self.prev_row != self.end_row:
-			# column offsets have not changed
-			return token
+			if is_import(token):
+				self.tokens.append(MARKER)
+			else:
+				self.tokens.append(token.value)
 
-		new_start_row, new_start_col = token.start
-		new_end_row, new_end_col = token.end
+			self.prev_row, self.prev_col = token.end
+			if token.type in NEWLINES:
+				self.prev_row += 1
+				self.prev_col = 0
 
-		new_start_col += self.col_offset
-		new_end_col += self.col_offset
-		return token._replace(start=(new_start_row, new_start_col), end=(new_end_row, new_end_col))
+		return "".join(self.tokens)
 
 def tokenize(string):
 	return tokenize_.tokenize(io.BytesIO(string.encode('utf-8')).readline)
