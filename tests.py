@@ -36,6 +36,7 @@ def test_valid_string_literals():
 
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
+		print(invalid)
 		with py.test.raises(SyntaxError):
 			print(invalid)  # in case it raises and we want to see what raised
 			ie.parse(invalid)
@@ -51,17 +52,14 @@ def test_invalid_non_attribute_syntax():
 			ie.parse(invalid)
 
 def test_eval_exec():
-	import textwrap
-
 	import collections
 	import ipaddress
+	import textwrap
 	import urllib.parse
 
+	assert ie.eval('collections!.Counter(urllib.parse!.quote("foo"))') == dict(f=1, o=2)
 	assert ie.eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
 	assert ie.eval('urllib.parse!.quote("?")') == urllib.parse.quote('?')
-	assert (
-		ie.eval('collections!.Counter(urllib.parse!.unquote("foo"))')
-		== collections.Counter(urllib.parse.unquote("foo")))
 
 	g = {}
 	ie.exec(textwrap.dedent("""
@@ -91,3 +89,14 @@ def test_eval_exec():
 	), g)
 
 	assert g['foo'](1) == 'can we make it into jishaku?'
+
+	class AttributeBox:
+		pass
+
+	g = {'x': AttributeBox()}
+
+	ie.exec('x.y = 1', g)
+	assert g['x'].y == 1
+
+	ie.exec('del x.y', g)
+	assert not hasattr(g['x'], 'y')
