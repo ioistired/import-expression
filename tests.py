@@ -36,9 +36,8 @@ def test_valid_string_literals():
 
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
-		print(invalid)
+		print(invalid)  # in case it does not raisesll and we want to see what failed
 		with py.test.raises(SyntaxError):
-			print(invalid)  # in case it raises and we want to see what raised
 			ie.parse(invalid)
 
 def test_invalid_non_attribute_syntax():
