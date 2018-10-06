@@ -20,48 +20,17 @@ class Transformer(ast.NodeTransformer):
 	def __init__(self, *, filename=None):
 		self.filename = filename
 
-	def _syntax_error(self, message, node):
-		# last two items in the tuple are column offset and source code text
-		return SyntaxError(message, (self.filename, node.lineno, None, None))
-
 	def visit(self, node):
-		if isinstance(node, (ast.Attribute, ast.Name)):
-			if self._for_any_child_node_string(has_invalid_import_op, node):
-				raise self._syntax_error(
-					f'"{IMPORT_OP}" only allowed at end of attribute name',
-					node
-				) from None
-
-		# if we reached this point, we encountered a node where no import operators are allowed,
-		# except possibly in child nodes.
-		elif self._for_any_node_string(has_any_import_op, node):
-			raise self._syntax_error(
-				'import expressions are only allowed in variables and attributes',
-				node
-			) from None
-
 		return super().visit(node)
-
-	@classmethod
-	def _for_any_child_node_string(cls, predicate, node):
-		for child_node in ast.walk(node):
-			if cls._for_any_node_string(predicate, node):
-				return True
-
-		return False
-
-	@staticmethod
-	def _for_any_node_string(predicate, node):
-		for field, value in ast.iter_fields(node):
-			if isinstance(value, str) and predicate(value):
-				return True
-
-		return False
 
 	def visit_Attribute(self, node):
 		"""
 		convert Attribute nodes containing import expressions into Attribute nodes containing import calls
 		"""
+		not_to_be_transformed = self._check_node_syntax(node)
+		if not_to_be_transformed:
+			return not_to_be_transformed
+
 		maybe_transformed = self._transform_attribute_attr(node)
 		if maybe_transformed:
 			return maybe_transformed
@@ -76,6 +45,9 @@ class Transformer(ast.NodeTransformer):
 
 	def visit_Name(self, node):
 		"""convert solitary Names that have import expressions, such as "a!", into import calls"""
+		not_to_be_transformed = self._check_node_syntax(node)
+		if not_to_be_transformed:
+			return not_to_be_transformed
 
 		is_import = id = has_valid_import_op(node.id)
 		if is_import:
@@ -99,8 +71,6 @@ class Transformer(ast.NodeTransformer):
 
 		node.attr = attr
 		as_source = self.attribute_source(node)
-		if type(node.ctx) is not ast.Load:
-			return node
 
 		return ast.copy_location(
 			self._import_call(as_source),
@@ -110,7 +80,7 @@ class Transformer(ast.NodeTransformer):
 		"""return a source-code representation of an Attribute node"""
 
 		is_import = self._has_valid_import_op(node)
-		if is_import and seen_import_op:
+		if is_import and _seen_import_op:
 			raise self._syntax_error('multiple import expressions not allowed', node) from None
 
 		stripped = self._remove_import_op(node)
@@ -121,6 +91,47 @@ class Transformer(ast.NodeTransformer):
 		rhs = stripped
 
 		return lhs + '.' + rhs
+
+	def _check_node_syntax(self, node):
+		if self._import_expression_candidate(node):
+			self._ensure_only_valid_import_ops(node)
+			return None  # to indicate that the node needs further processing
+		else:
+			self._ensure_no_import_ops(node)
+			return node  # node is fine as-is
+
+	def _import_expression_candidate(self, node):
+		return isinstance(node, (ast.Attribute, ast.Name)) and isinstance(node.ctx, ast.Load)
+
+	def _ensure_only_valid_import_ops(self, node):
+		if self._for_any_child_node_string(has_invalid_import_op, node):
+			raise self._syntax_error(
+				f'"{IMPORT_OP}" only allowed at end of attribute name',
+				node
+			) from None
+
+	def _ensure_no_import_ops(self, node):
+		if self._for_any_node_string(has_any_import_op, node):
+			raise self._syntax_error(
+				'import expressions are only allowed in variables and attributes',
+				node
+			) from None
+
+	@classmethod
+	def _for_any_child_node_string(cls, predicate, node):
+		for child_node in ast.walk(node):
+			if cls._for_any_node_string(predicate, node):
+				return True
+
+		return False
+
+	@staticmethod
+	def _for_any_node_string(predicate, node):
+		for field, value in ast.iter_fields(node):
+			if isinstance(value, str) and predicate(value):
+				return True
+
+		return False
 
 	def _call_on_name_or_attribute(func):
 		def checker(node):
@@ -139,5 +150,11 @@ class Transformer(ast.NodeTransformer):
 	_has_invalid_import_op = _call_on_name_or_attribute(has_invalid_import_op)
 
 	del _call_on_name_or_attribute
+
+	def _syntax_error(self, message, node):
+		# last two items in the tuple are column offset and source code text
+		return SyntaxError(message, (self.filename, node.lineno, None, None))
+
+
 
 _load = ast.Load()  # optimization

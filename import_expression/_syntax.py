@@ -11,7 +11,7 @@ is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string ==
 
 NEWLINES = {NEWLINE, tokenize_.NL}
 
-def fix_syntax(s, filename=DEFAULT_FILENAME):
+def fix_syntax(s: str, filename=DEFAULT_FILENAME) -> bytes:
 	tokens = tokenize(s)  # TODO is there a better way than tokenizing and then untokenizing? don't think so?
 	untokenizer = Untokenizer()
 	try:
@@ -48,10 +48,6 @@ class Untokenizer:
 		if row < self.prev_row or row == self.prev_row and col < self.prev_col:
 			raise ValueError("start ({},{}) precedes previous end ({},{})"
 							 .format(row, col, self.prev_row, self.prev_col))
-		row_offset = row - self.prev_row
-		if row_offset:
-			self.tokens.append("\\\n" * row_offset)
-			self.prev_col = 0
 
 		col_offset = col - self.prev_col
 		self.tokens.append(" " * col_offset)

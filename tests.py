@@ -28,14 +28,16 @@ invalid_attribute_cases = (
 	'ab.b!c',
 )
 
-def test_valid_strings():
+def test_valid_string_literals():
 	for invalid in invalid_attribute_cases:
 		valid = f'"{invalid}"'
+		print(valid)
 		ie.parse(valid)
 
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
 		with py.test.raises(SyntaxError):
+			print(invalid)  # in case it raises and we want to see what raised
 			ie.parse(invalid)
 
 def test_invalid_non_attribute_syntax():
@@ -51,9 +53,15 @@ def test_invalid_non_attribute_syntax():
 def test_eval_exec():
 	import textwrap
 
+	import collections
 	import ipaddress
+	import urllib.parse
+
 	assert ie.eval('ipaddress!.IPV6LENGTH') == ipaddress.IPV6LENGTH
-	assert ie.eval('urllib.parse!.quote("?")') == '%3F'
+	assert ie.eval('urllib.parse!.quote("?")') == urllib.parse.quote('?')
+	assert (
+		ie.eval('collections!.Counter(urllib.parse!.unquote("foo"))')
+		== collections.Counter(urllib.parse.unquote("foo")))
 
 	g = {}
 	ie.exec(textwrap.dedent("""
@@ -65,8 +73,6 @@ def test_eval_exec():
 	assert g['b']() == '?these_tests_are_overkill_for_a_debug_cog=1'
 
 
-	import urllib.parse
-
 	g = {}
 	ie.exec(textwrap.dedent("""
 	def foo(x):
@@ -76,7 +82,7 @@ def test_eval_exec():
 		x = x + 1
 
 		def bar():
-			return urllib.parse!.unquote('this%20will%20never%20be%20merged%20into%20jishaku%2C%20will%20it%20%3A%28')
+			return urllib.parse!.unquote('can%20we%20make%20it%20into%20jishaku%3F')
 
 		# the hanging indent on the following line is intentional
 		
@@ -84,4 +90,4 @@ def test_eval_exec():
 		return bar()"""
 	), g)
 
-	assert g['foo'](1) == 'this will never be merged into jishaku, will it :('
+	assert g['foo'](1) == 'can we make it into jishaku?'
