@@ -34,11 +34,8 @@ def _make_excepthook(globals):
 		except SyntaxError:
 			try:
 				import_expression.exec(error.text, globals)
-			except SyntaxError:
-				# it must be invalid Python syntax, not invalid import expr syntax
+			except BaseException as error:
 				return sys.__excepthook__(type(error), error, error.__traceback__)
-		except SyntaxError:
-			return sys.__excepthook__(type(error), error, error.__traceback__)
 		except BaseException as error:
 			return sys.__excepthook__(type(error), error, error.__traceback__)
 		else:
