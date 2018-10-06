@@ -89,6 +89,8 @@ def test_eval_exec():
 
 	assert g['foo'](1) == 'can we make it into jishaku?'
 
+
+def test_load_store_attribute():
 	class AttributeBox:
 		pass
 
