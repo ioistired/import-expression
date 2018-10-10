@@ -36,10 +36,23 @@ def test_valid_string_literals():
 
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
-		print(invalid)
+		print(invalid)  # in case it does not raisesll and we want to see what failed
 		with py.test.raises(SyntaxError):
-			print(invalid)  # in case it raises and we want to see what raised
 			ie.parse(invalid)
+
+def test_invalid_del_store_attribute():
+	for valid in (
+		'a.b!',
+		'a!.b',
+		'a.b.c!.d',
+	):
+		invalid_del = f'del {valid}'
+		invalid_store = f'{valid} = 1'
+
+		for test in invalid_del, invalid_store:
+			print(test)
+			with py.test.raises(SyntaxError):
+				ie.parse(test, mode='exec')
 
 def test_invalid_non_attribute_syntax():
 	for invalid in (
@@ -50,6 +63,18 @@ def test_invalid_non_attribute_syntax():
 	):
 		with py.test.raises(SyntaxError):
 			ie.parse(invalid)
+
+def test_del_store_attribute():
+	class AttributeBox:
+		pass
+
+	g = {'x': AttributeBox()}
+
+	ie.exec('x.y = 1', g)
+	assert g['x'].y == 1
+
+	ie.exec('del x.y', g)
+	assert not hasattr(g['x'], 'y')
 
 def test_eval_exec():
 	import collections
@@ -89,14 +114,3 @@ def test_eval_exec():
 	), g)
 
 	assert g['foo'](1) == 'can we make it into jishaku?'
-
-	class AttributeBox:
-		pass
-
-	g = {'x': AttributeBox()}
-
-	ie.exec('x.y = 1', g)
-	assert g['x'].y == 1
-
-	ie.exec('del x.y', g)
-	assert not hasattr(g['x'], 'y')
