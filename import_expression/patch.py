@@ -7,13 +7,13 @@ import inspect
 import os
 import sys
 
-from . import _public as import_expression
+from . import eval as ie_eval, exec as ie_exec
 
 def patch(globals=sys.modules['__main__'].__dict__):
 	"""monkey patch sys.excepthook so that import expressions work at the repl
 
 	If a line has a syntax error, import_expression.eval is attempted on it.
-	If this also results in a syntax error, import_eval.exec will be run instead.
+	If this also results in a syntax error, import_expression.exec will be run instead.
 	Both cases will run in the context of the given globals dict, or if None, globals produced by statements will be saved to the __main__ module
 	"""
 	if not _is_tty():
@@ -30,10 +30,10 @@ def _make_excepthook(globals):
 			return sys.__excepthook__(type(error), error, error.__traceback__)
 
 		try:
-			result = import_expression.eval(error.text, globals)
+			result = ie_eval(error.text, globals)
 		except SyntaxError:
 			try:
-				import_expression.exec(error.text, globals)
+				i_exec(error.text, globals)
 			except BaseException as error:
 				return sys.__excepthook__(type(error), error, error.__traceback__)
 		except BaseException as error:

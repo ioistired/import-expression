@@ -3,7 +3,7 @@ import io
 from token import *
 import tokenize as tokenize_
 
-from ._constants import *
+from .constants import *
 
 tokenize_.TokenInfo.value = property(lambda self: self.string)
 
