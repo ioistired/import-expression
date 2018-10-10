@@ -35,7 +35,6 @@ def compile(source: _typing.Union[_ast.AST, str], filename=_constants.DEFAULT_FI
 def eval(source: str, globals=None, locals=None):
 	"""evaluate Import Expression Python™ in the given globals and locals"""
 	globals, locals = _parse_eval_exec_args(globals, locals)
-	print(type(source))
 	return _builtins.eval(compile(source, _constants.DEFAULT_FILENAME, 'eval'), globals, locals)
 
 def exec(source, globals=None, locals=None):
