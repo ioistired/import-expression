@@ -32,18 +32,16 @@ def test_valid_string_literals():
 	for invalid in invalid_attribute_cases:
 		valid = f'"{invalid}"'
 		print(valid)
-		ie.parse(valid)
+		ie.compile(valid)
 
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
 		print(invalid)  # in case it does not raisesll and we want to see what failed
 		with py.test.raises(SyntaxError):
-			ie.parse(invalid)
+			ie.compile(invalid)
 
 def test_del_store_import():
 	for test in (
-		'a!'
-		'a.b!',
 		'a!.b',
 		'a.b.c!.d',
 	):
@@ -52,7 +50,21 @@ def test_del_store_import():
 
 		for test in del_, store:
 			print(test)
-			ie.parse(test, mode='exec')
+			ie.compile(test, mode='exec')
+
+def test_invalid_del_store_import():
+	for test in (
+		'a!',
+		'a.b!',
+	):
+		del_ = f'del {test}'
+		store = f'{test} = 1'
+		for test in del_, store:
+			print(test)
+			with py.test.raises(SyntaxError):
+				# we use parse instead of compile
+				# because these errors should be caught before builtins.compile detects them
+				ie.parse(test, mode='exec')
 
 def test_invalid_non_attribute_syntax():
 	for invalid in (
@@ -62,7 +74,8 @@ def test_invalid_non_attribute_syntax():
 		'class X(Y!): pass',
 	):
 		with py.test.raises(SyntaxError):
-			ie.parse(invalid)
+			print(invalid)
+			ie.compile(invalid, mode='exec')
 
 def test_del_store_attribute():
 	class AttributeBox:
