@@ -39,7 +39,7 @@ class Transformer(ast.NodeTransformer):
 			return ast.copy_location(
 				ast.Attribute(
 					value=transformed_lhs,
-					ctx=_load,
+					ctx=node.ctx,
 					attr=node.attr),
 				node)
 
@@ -51,13 +51,13 @@ class Transformer(ast.NodeTransformer):
 
 		is_import = id = has_valid_import_op(node.id)
 		if is_import:
-			return ast.copy_location(self._import_call(id), node)
+			return ast.copy_location(self._import_call(id, node.ctx), node)
 		return node
 
 	@staticmethod
-	def _import_call(attribute_source):
+	def _import_call(attribute_source, ctx):
 		return ast.Call(
-			func=ast.Name(id=IMPORTER, ctx=_load),
+			func=ast.Name(id=IMPORTER, ctx=ctx),
 			args=[ast.Str(attribute_source)],
 			keywords=[])
 
@@ -73,7 +73,7 @@ class Transformer(ast.NodeTransformer):
 		as_source = self.attribute_source(node)
 
 		return ast.copy_location(
-			self._import_call(as_source),
+			self._import_call(as_source, node.ctx),
 			node)
 
 	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
@@ -101,7 +101,7 @@ class Transformer(ast.NodeTransformer):
 			return node  # node is fine as-is
 
 	def _import_expression_candidate(self, node):
-		return isinstance(node, (ast.Attribute, ast.Name)) and isinstance(node.ctx, ast.Load)
+		return isinstance(node, (ast.Attribute, ast.Name))
 
 	def _ensure_only_valid_import_ops(self, node):
 		if self._for_any_child_node_string(has_invalid_import_op, node):
@@ -154,7 +154,3 @@ class Transformer(ast.NodeTransformer):
 	def _syntax_error(self, message, node):
 		# last two items in the tuple are column offset and source code text
 		return SyntaxError(message, (self.filename, node.lineno, None, None))
-
-
-
-_load = ast.Load()  # optimization

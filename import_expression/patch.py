@@ -33,7 +33,7 @@ def _make_excepthook(globals):
 			result = ie_eval(error.text, globals)
 		except SyntaxError:
 			try:
-				i_exec(error.text, globals)
+				ie_exec(error.text, globals)
 			except BaseException as error:
 				return sys.__excepthook__(type(error), error, error.__traceback__)
 		except BaseException as error:

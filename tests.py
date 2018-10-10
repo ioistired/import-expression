@@ -40,19 +40,19 @@ def test_invalid_attribute_syntax():
 		with py.test.raises(SyntaxError):
 			ie.parse(invalid)
 
-def test_invalid_del_store_attribute():
-	for valid in (
+def test_del_store_import():
+	for test in (
+		'a!'
 		'a.b!',
 		'a!.b',
 		'a.b.c!.d',
 	):
-		invalid_del = f'del {valid}'
-		invalid_store = f'{valid} = 1'
+		del_ = f'del {test}'
+		store = f'{test} = 1'
 
-		for test in invalid_del, invalid_store:
+		for test in del_, store:
 			print(test)
-			with py.test.raises(SyntaxError):
-				ie.parse(test, mode='exec')
+			ie.parse(test, mode='exec')
 
 def test_invalid_non_attribute_syntax():
 	for invalid in (
