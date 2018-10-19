@@ -36,7 +36,7 @@ def test_valid_string_literals():
 
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
-		print(invalid)  # in case it does not raisesll and we want to see what failed
+		print(invalid)  # in case it does not raise and we want to see what failed
 		with py.test.raises(SyntaxError):
 			ie.compile(invalid)
 
@@ -61,10 +61,10 @@ def test_invalid_del_store_import():
 		store = f'{test} = 1'
 		for test in del_, store:
 			print(test)
-			with py.test.raises(SyntaxError):
-				# we use parse instead of compile
-				# because these errors should be caught before builtins.compile detects them
-				ie.parse(test, mode='exec')
+			# we use Exception instead of SyntaxError because this error may be caught
+			# by builtins.compile (raises ValueError) or ie.parse (raises SyntaxError)
+			with py.test.raises(Exception):
+				ie.compile(test, mode='exec')
 
 def test_invalid_non_attribute_syntax():
 	for invalid in (
@@ -73,7 +73,7 @@ def test_invalid_non_attribute_syntax():
 		'def fo!o(y): pass',
 		'class X(Y!): pass',
 	):
-		with py.test.raises(SyntaxError):
+		with py.test.raises(Exception):
 			print(invalid)
 			ie.compile(invalid, mode='exec')
 
@@ -81,13 +81,14 @@ def test_del_store_attribute():
 	class AttributeBox:
 		pass
 
-	g = {'x': AttributeBox()}
+	x = AttributeBox()
+	g = dict(x=x)
 
 	ie.exec('x.y = 1', g)
-	assert g['x'].y == 1
+	assert x.y == 1
 
 	ie.exec('del x.y', g)
-	assert not hasattr(g['x'], 'y')
+	assert not hasattr(x, 'y')
 
 def test_eval_exec():
 	import collections
