@@ -73,5 +73,4 @@ And all REPL sessions will use the import expression syntax.
 ## [License](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE)
 
 Copyright © 2018 Benjamin Mintz <<bmintz@protonmail.com>>. All Rights Reserved.
-Licensed under this new hipster cool cat license called the [Charity Public License v1.10.0](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE).
-If you are not a hipster cool cat, please contact me to arrange a private license.
+Licensed under the MIT License. See the LICENSE.md file for details.
