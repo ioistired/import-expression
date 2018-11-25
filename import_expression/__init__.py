@@ -10,7 +10,7 @@ import typing as _typing
 
 from . import constants
 from ._syntax import fix_syntax as _fix_syntax
-from ._parser import parse_ast as _parse_ast
+from ._parser import parse_ast as parse_ast
 from .version import __version__
 
 with _contextlib.suppress(NameError):
@@ -33,7 +33,7 @@ def parse(source: str, *, mode='eval', filename=constants.DEFAULT_FILENAME):
 	"""
 	fixed = _fix_syntax(source)
 	tree = _ast.parse(fixed, filename, mode)
-	return _parse_ast(tree, filename=filename)
+	return parse_ast(tree, filename=filename)
 
 def compile(source: _typing.Union[_ast.AST, str], filename=constants.DEFAULT_FILENAME, mode='eval'):
 	"""compile a string or AST containing import expressions to a code object"""
