@@ -69,11 +69,19 @@ def test_invalid_del_store_import():
 def test_invalid_non_attribute_syntax():
 	for invalid in (
 		'def foo(x!): pass',
-		'class X!: pass',
+		'def foo(*x!): pass',
+		'def foo(**y!): pass',
+		'def foo(*, z!): pass',
+
 		'def fo!o(y): pass',
-		'class X(Y!): pass',
+		'def foo!(y): pass',
+
+		'class X!: pass',
+		# note space around equals sign:
+		# class Y(Z!=1) is valid if Z.__ne__ returns a class
+		'class Y(Z! = 1): pass',
 	):
-		with py.test.raises(Exception):
+		with py.test.raises(SyntaxError):
 			print(invalid)
 			ie.compile(invalid, mode='exec')
 
