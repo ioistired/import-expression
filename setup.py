@@ -11,7 +11,7 @@ import sys
 import typing
 
 logging.basicConfig(level=logging.INFO)
-HERE = os.path.realpath(os.path.dirname(__file__))
+here = os.path.realpath(os.path.dirname(__file__))
 
 def import_by_path(name, path):
 	spec = importlib.util.spec_from_file_location(name, path)
@@ -20,7 +20,6 @@ def import_by_path(name, path):
 
 	return module
 
-here = os.path.realpath(os.path.dirname(__file__))
 init_path = os.path.join(here, 'import_expression', 'version.py')
 # we put the version in a separate file because:
 # A) We can't import the module directly before it's installed
@@ -30,7 +29,6 @@ version = import_by_path('version', init_path).__version__
 
 with open('README.md') as f:
 	long_description = f.read()
-
 
 command_classes = {}
 
@@ -102,7 +100,7 @@ setuptools.setup(
 	long_description=long_description,
 	long_description_content_type='text/markdown',
 
-	license='Charity Public License v1.1.0',
+	license='MIT',
 
 	author='Benjamin Mintz',
 	author_email='bmintz@protonmail.com',
@@ -112,10 +110,14 @@ setuptools.setup(
 
 	extras_require={
 		'test': [
-			'pytest'
+			'pytest',
 			'pytest-cov',
 		],
 	},
 
 	cmdclass=command_classes,
+
+	classifiers=[
+		'License :: OSI Approved :: MIT License',
+	],
 )
