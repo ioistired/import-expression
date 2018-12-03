@@ -27,6 +27,10 @@ Counter({'e': 4, 'd': 3, 'c': 2, 'b': 1})
 By default, the filename for `SyntaxError`s is `<string>`.
 To change this, pass in a filename via the `filename` kwarg.
 
+## AST usage
+
+<!-- TODO document usage like jishaku or how one could build a REPL -->
+
 ### Monkey Patching the REPL
 
 ```py
