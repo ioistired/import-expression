@@ -52,7 +52,7 @@ And all REPL sessions will use the import expression syntax.
 
 ## Limitations / Known Issues
 
-* Some invalid syntax, such as `urllib!.parse!`, `def foo(x!)`, and `import x!` is not yet detected.
+* Some invalid syntax, such as `urllib!.parse!` and`import x!` is not yet detected, though the former still works as though it was `urllib.parse!`.
 * Due to the hell that is f-string parsing, import expressions inside f-strings will likely never be supported.
 * Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals
   without an explicit `globals` argument.

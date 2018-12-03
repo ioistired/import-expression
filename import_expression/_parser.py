@@ -20,9 +20,6 @@ class Transformer(ast.NodeTransformer):
 	def __init__(self, *, filename=None):
 		self.filename = filename
 
-	def visit(self, node):
-		return super().visit(node)
-
 	def visit_Attribute(self, node):
 		"""
 		convert Attribute nodes containing import expressions into Attribute nodes containing import calls
@@ -92,6 +89,37 @@ class Transformer(ast.NodeTransformer):
 
 		return lhs + '.' + rhs
 
+	def visit_def_(self, node):
+		print('_visit_def:', node.name)
+		if not has_any_import_op(node.name):
+			# it's valid so far, just ensure that arguments are also visited
+			return self.generic_visit(node)
+
+		if isinstance(node, ast.ClassDef):
+			type_name = 'class'
+		else:
+			type_name = 'function'
+
+		raise self._syntax_error(
+			f'"{IMPORT_OP}" not allowed in the name of a {type_name}',
+			node
+		) from None
+
+	visit_FunctionDef = visit_def_
+	visit_ClassDef = visit_def_
+
+	def visit_arg(self, node):
+		"""ensure foo(x!=1) or def foo(x!) does not occur"""
+		if has_any_import_op(node.arg):
+			raise self._syntax_error(
+				f'"{IMPORT_OP}" not allowed in function arguments',
+				node
+			) from None
+
+		return node
+
+	visit_keyword = visit_arg
+
 	def _check_node_syntax(self, node):
 		if self._import_expression_candidate(node):
 			self._ensure_only_valid_import_ops(node)
@@ -153,4 +181,4 @@ class Transformer(ast.NodeTransformer):
 
 	def _syntax_error(self, message, node):
 		# last two items in the tuple are column offset and source code text
-		return SyntaxError(message, (self.filename, node.lineno, None, None))
+		return SyntaxError(message, (self.filename, getattr(node, 'lineno', None), None, None))
