@@ -112,7 +112,6 @@ class Transformer(ast.NodeTransformer):
 		return lhs + '.' + rhs
 
 	def visit_def_(self, node):
-		print('_visit_def:', node.name)
 		if not has_any_import_op(node.name):
 			# it's valid so far, just ensure that arguments are also visited
 			return self.generic_visit(node)
