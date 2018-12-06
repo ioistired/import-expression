@@ -166,3 +166,8 @@ def test_eval_exec():
 	), g)
 
 	assert g['foo'](1) == 'can we make it into jishaku?'
+
+def test_importer_name_not_mangled():
+	# if import_expression.constants.IMPORTER.startswith('__'),
+	# this will fail
+	ie.exec('class Foo: x = io!')
