@@ -132,8 +132,10 @@ def test_kwargs():
 	# See https://github.com/bmintz/import-expression-parser/issues/1
 	ie.compile('f(**a)', mode='eval')
 
-def test_eval_exec():
 	import collections
+	assert ie.eval('dict(x=collections!)')['x'] is collections
+
+def test_eval_exec():
 	import ipaddress
 	import textwrap
 	import urllib.parse

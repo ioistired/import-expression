@@ -113,7 +113,7 @@ class Transformer(ast.NodeTransformer):
 
 	def visit_def_(self, node):
 		if not has_any_import_op(node.name):
-			# it's valid so far, just ensure that arguments are also visited
+			# it's valid so far, just ensure that arguments and body are also visited
 			return self.generic_visit(node)
 
 		if isinstance(node, ast.ClassDef):
@@ -130,7 +130,7 @@ class Transformer(ast.NodeTransformer):
 	visit_ClassDef = visit_def_
 
 	def visit_arg(self, node):
-		"""ensure foo(x!=1) or def foo(x!) does not occur"""
+		"""ensure foo(x! = 1) or def foo(x!) does not occur"""
 		if node.arg is not None and has_any_import_op(node.arg):
 			raise self._syntax_error(
 				f'"{IMPORT_OP}" not allowed in function arguments',
@@ -139,7 +139,10 @@ class Transformer(ast.NodeTransformer):
 
 		return node
 
-	visit_keyword = visit_arg
+	def visit_keyword(self, node):
+		self.visit_arg(node)
+		# keyword arguments may have import expressions as children
+		return super().generic_visit(node)
 
 	def _check_node_syntax(self, node):
 		if self._import_expression_candidate(node):
