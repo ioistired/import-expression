@@ -9,11 +9,9 @@ Import Expression Parser converts code like this:
 x = collections.deque!(maxsize=2)
 ```
 
-Into this roughly equivalent code:
+Into this equivalent code:
 ```py
-from collections import deque
-x = deque(maxsize=2)
-del deque
+x = importlib.import_module('collections').deque(maxsize=2)
 ```
 
 ## Usage
