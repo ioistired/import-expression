@@ -131,7 +131,7 @@ class Transformer(ast.NodeTransformer):
 
 	def visit_arg(self, node):
 		"""ensure foo(x!=1) or def foo(x!) does not occur"""
-		if has_any_import_op(node.arg):
+		if node.arg is not None and has_any_import_op(node.arg):
 			raise self._syntax_error(
 				f'"{IMPORT_OP}" not allowed in function arguments',
 				node
