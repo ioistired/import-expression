@@ -128,6 +128,10 @@ def test_del_store_attribute():
 	ie.exec('del x.y', g)
 	assert not hasattr(x, 'y')
 
+def test_kwargs():
+	# See https://github.com/bmintz/import-expression-parser/issues/1
+	ie.compile('f(**a)', mode='eval')
+
 def test_eval_exec():
 	import collections
 	import ipaddress
