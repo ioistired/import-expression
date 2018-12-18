@@ -75,5 +75,5 @@ And all REPL sessions will use the import expression syntax.
 
 ## [License](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE)
 
-Copyright © 2018 Benjamin Mintz <<bmintz@protonmail.com>>. All Rights Reserved.
+Copyright © 2018 Benjamin Mintz <<bmintz@protonmail.com>>. All Rights Reserved. \
 Licensed under the MIT License. See the LICENSE.md file for details.
