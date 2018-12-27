@@ -137,7 +137,8 @@ class Transformer(ast.NodeTransformer):
 				node
 			) from None
 
-		return node
+		# refular arguments may have import expr annotations as children
+		return super().generic_visit(node)
 
 	def visit_keyword(self, node):
 		self.visit_arg(node)
