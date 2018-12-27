@@ -145,6 +145,9 @@ def test_typehint_conversion():
 	ie.exec('def bar(x: typing!.T): pass', g)
 	assert g['bar'].__annotations__['x'] is T
 
+	ie.exec('def baz(x: typing!.T = 1): pass', g)
+	assert g['baz'].__annotations__['x'] is T
+
 def test_comments():
 	ie.exec('# a')
 
