@@ -135,6 +135,16 @@ def test_kwargs():
 	import collections
 	assert ie.eval('dict(x=collections!)')['x'] is collections
 
+def test_typehint_conversion():
+	from typing import T
+
+	g = {}
+	ie.exec('def foo() -> typing!.T: pass', g)
+	assert g['foo'].__annotations__['return'] is T
+
+	ie.exec('def bar(x: typing!.T): pass', g)
+	assert g['bar'].__annotations__['x'] is T
+
 def test_comments():
 	ie.exec('# a')
 
