@@ -135,6 +135,9 @@ def test_kwargs():
 	import collections
 	assert ie.eval('dict(x=collections!)')['x'] is collections
 
+def test_comments():
+	ie.exec('# a')
+
 def test_eval_exec():
 	import ipaddress
 	import textwrap
