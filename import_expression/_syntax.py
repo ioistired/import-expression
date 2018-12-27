@@ -115,7 +115,10 @@ class Untokenizer:
 				self.tokens.append(token.value)
 
 			self.prev_row, self.prev_col = token.end
-			if token.type in NEWLINES:
+
+			# don't ask me why this shouldn't be "in NEWLINES",
+			# but ignoring tokenize_.NL here fixes #3
+			if token.type == NEWLINE:
 				self.prev_row += 1
 				self.prev_col = 0
 
