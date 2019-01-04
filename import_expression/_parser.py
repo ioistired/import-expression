@@ -137,12 +137,22 @@ class Transformer(ast.NodeTransformer):
 				node
 			) from None
 
-		# refular arguments may have import expr annotations as children
+		# regular arguments may have import expr annotations as children
 		return super().generic_visit(node)
 
 	def visit_keyword(self, node):
 		self.visit_arg(node)
 		# keyword arguments may have import expressions as children
+		return super().generic_visit(node)
+
+	def visit_alias(self, node):
+		# from x import y **as z**
+		self._ensure_no_import_ops(node)
+		return node
+
+	def visit_ImportFrom(self, node):
+		self._ensure_no_import_ops(node)
+		# ImportFrom nodes can have alias children that we also need to check
 		return super().generic_visit(node)
 
 	def _check_node_syntax(self, node):
@@ -164,7 +174,7 @@ class Transformer(ast.NodeTransformer):
 			) from None
 
 	def _ensure_no_import_ops(self, node):
-		if self._for_any_node_string(has_any_import_op, node):
+		if self._for_any_child_node_string(has_any_import_op, node):
 			raise self._syntax_error(
 				'import expressions are only allowed in variables and attributes',
 				node
