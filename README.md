@@ -1,6 +1,6 @@
 # Import Expression Parser (for lack of a better name)
 
-[![Build Status](/travis/bmintz/import-expression-parser/main.svg?label=tests)](https://travis-ci.org/bmintz/import-expression-parser)
+[![Build Status](https://img.shields.io/travis/bmintz/import-expression-parser/main.svg?label=tests)](https://travis-ci.org/bmintz/import-expression-parser)
 [![Coverage Status](https://coveralls.io/repos/github/bmintz/import-expression-parser/badge.svg?branch=main)](https://coveralls.io/github/bmintz/import-expression-parser?branch=main)
 
 Import Expression Parser converts code like this:
