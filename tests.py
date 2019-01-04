@@ -151,6 +151,20 @@ def test_typehint_conversion():
 def test_comments():
 	ie.exec('# a')
 
+def test_import_statement():
+	for invalid in (
+		'import x!',
+		'import x.y!',
+		'import x!.y!',
+		'from x!.y import z',
+		'from x.y import z!',
+		'from w.x import y as z!',
+		'from w.x import y as z, a as b!',
+	):
+		print(invalid)
+		with py.test.raises(SyntaxError):
+			ie.compile(invalid, mode='exec')
+
 def test_eval_exec():
 	import ipaddress
 	import textwrap
