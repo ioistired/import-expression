@@ -25,7 +25,7 @@ Counter({'e': 4, 'd': 3, 'c': 2, 'b': 1})
 By default, the filename for `SyntaxError`s is `<string>`.
 To change this, pass in a filename via the `filename` kwarg.
 
-## AST usage
+### AST usage
 
 <!-- TODO document usage like jishaku or how one could build a REPL -->
 
@@ -54,8 +54,10 @@ And all REPL sessions will use the import expression syntax.
 
 ## Limitations / Known Issues
 
-* Some invalid syntax, such as `urllib!.parse!` and`import x!` is not yet detected, though the former still works as though it was `urllib.parse!`.
-* Due to the hell that is f-string parsing, import expressions inside f-strings will likely never be supported.
+* Some invalid syntax, such as `urllib!.parse!` is not yet detected,
+  though that still works as though it was `urllib.parse!`.
+* Due to the hell that is f-string parsing, and because `!` is already an operator inside f-strings,
+  import expressions inside f-strings will likely never be supported.
 * Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals
   without an explicit `globals` argument.
 
