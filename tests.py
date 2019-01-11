@@ -88,6 +88,10 @@ def test_invalid_del_store_import():
 			with py.test.raises(Exception):
 				ie.compile(test, mode='exec')
 
+def test_lone_import_op():
+	with py.test.raises(SyntaxError):
+		ie.compile('!', mode='exec')
+
 def test_invalid_argument_syntax():
 	for invalid in (
 		'def foo(x!): pass',
