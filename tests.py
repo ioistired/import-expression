@@ -56,6 +56,7 @@ def test_valid_string_literals():
 		print(valid)
 		ie.compile(valid)
 
+@py.test.mark.xfail()  # TODO
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
 		print(invalid)  # in case it does not raise and we want to see what failed
@@ -88,6 +89,7 @@ def test_invalid_del_store_import():
 			with py.test.raises(Exception):
 				ie.compile(test, mode='exec')
 
+@py.test.mark.xfail()  # TODO
 def test_lone_import_op():
 	with py.test.raises(SyntaxError):
 		ie.compile('!', mode='exec')
