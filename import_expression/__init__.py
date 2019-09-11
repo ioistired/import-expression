@@ -37,7 +37,7 @@ with _contextlib.suppress(NameError):
 
 __all__ = ('compile', 'parse', 'eval', 'exec', 'constants')
 
-def parse(source: str, *, mode='eval', filename=constants.DEFAULT_FILENAME):
+def parse(source: _typing.Union[_ast.AST, str], *, mode='eval', filename=constants.DEFAULT_FILENAME):
 	"""
 	convert Import Expression Python™ to an AST
 
@@ -50,6 +50,10 @@ def parse(source: str, *, mode='eval', filename=constants.DEFAULT_FILENAME):
 
 	Filename is used in tracebacks, in case of invalid syntax or runtime exceptions.
 	"""
+	# for some API compatibility with ast, allow parse(parse('foo')) to work
+	if isinstance(source, _ast.AST):
+		return parse_ast(source, filename=filename)
+
 	fixed = _fix_syntax(source)
 	tree = _ast.parse(fixed, filename, mode)
 	return parse_ast(tree, filename=filename)
@@ -80,8 +84,7 @@ def _parse_eval_exec_args(globals, locals):
 	if globals is None:  # can't use truthiness because {} is falsy
 		globals = {}
 
-	globals.update({
-		constants.IMPORTER: _importlib.import_module})
+	globals.update({constants.IMPORTER: _importlib.import_module})
 
 	if locals is None:
 		locals = globals
