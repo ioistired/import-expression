@@ -213,3 +213,7 @@ def test_importer_name_not_mangled():
 	# if import_expression.constants.IMPORTER.startswith('__'),
 	# this will fail
 	ie.exec('class Foo: x = io!')
+
+def test_flags():
+	import ast
+	assert isinstance(ie.compile('foo', flags=ast.PyCF_ONLY_AST), ast.AST)

@@ -58,12 +58,19 @@ def parse(source: _typing.Union[_ast.AST, str], *, mode='eval', filename=constan
 	tree = _ast.parse(fixed, filename, mode)
 	return parse_ast(tree, filename=filename)
 
-def compile(source: _typing.Union[_ast.AST, str], filename=constants.DEFAULT_FILENAME, mode='eval'):
+def compile(
+	source: _typing.Union[_ast.AST, str],
+	filename=constants.DEFAULT_FILENAME,
+	mode='eval',
+	flags=0,
+	dont_inherit=False,
+	optimize=-1,
+):
 	"""compile a string or AST containing import expressions to a code object"""
 	if isinstance(source, str):
 		source = parse(source, filename=filename, mode=mode)
 
-	return _builtins.compile(source, filename, mode)
+	return _builtins.compile(source, filename, mode, flags, dont_inherit, optimize)
 
 def eval(source: str, globals=None, locals=None):
 	"""evaluate Import Expression Python™ in the given globals and locals"""
