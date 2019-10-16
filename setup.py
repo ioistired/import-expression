@@ -113,7 +113,7 @@ class ReleaseCommand(
 	name='release',
 	description='build and upload a release',
 	commands=(
-		(sys.executable, __file__, 'bdist_wheel'),
+		(sys.executable, __file__, 'sdist', 'bdist_wheel'),
 		('twine', 'upload', 'dist/*'),
 	)
 ):
