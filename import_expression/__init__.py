@@ -26,6 +26,7 @@ import contextlib as _contextlib
 import importlib as _importlib
 import inspect as _inspect
 import typing as _typing
+import types as _types
 
 from . import constants
 from ._syntax import fix_syntax as _fix_syntax
@@ -72,12 +73,16 @@ def compile(
 
 	return _builtins.compile(source, filename, mode, flags, dont_inherit, optimize)
 
-def eval(source: str, globals=None, locals=None):
+_code = _typing.Union[str, _types.CodeType]
+
+def eval(source: _code, globals=None, locals=None):
 	"""evaluate Import Expression Python™ in the given globals and locals"""
 	globals, locals = _parse_eval_exec_args(globals, locals)
+	if _inspect.iscode(source):
+		return _builtins.eval(source, globals, locals)
 	return _builtins.eval(compile(source, constants.DEFAULT_FILENAME, 'eval'), globals, locals)
 
-def exec(source, globals=None, locals=None):
+def exec(source: _code, globals=None, locals=None):
 	"""execute Import Expression Python™ in the given globals and locals
 
 	Note: unlike :func:`exec`, the default globals are *not* the caller's globals!
@@ -85,6 +90,8 @@ def exec(source, globals=None, locals=None):
 	Therefore, if no globals are provided, the results will be discarded!
 	"""
 	globals, locals = _parse_eval_exec_args(globals, locals)
+	if _inspect.iscode(source):
+		return _builtins.eval(source, globals, locals)
 	_builtins.eval(compile(source, constants.DEFAULT_FILENAME, 'exec'), globals, locals)
 
 def _parse_eval_exec_args(globals, locals):

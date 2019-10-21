@@ -217,3 +217,15 @@ def test_importer_name_not_mangled():
 def test_flags():
 	import ast
 	assert isinstance(ie.compile('foo', flags=ast.PyCF_ONLY_AST), ast.AST)
+
+def test_eval_code_object():
+	import collections
+	code = ie.compile('collections!.Counter', '', 'eval')
+	assert ie.eval(code) is collections.Counter
+
+def test_exec_code_object():
+	import collections
+	code = ie.compile('def foo(): return collections!.Counter', '', 'exec')
+	g = {}
+	ie.exec(code, globals=g)
+	assert g['foo']() is collections.Counter
