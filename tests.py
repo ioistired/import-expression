@@ -59,7 +59,7 @@ def test_valid_string_literals():
 @py.test.mark.xfail()  # TODO
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
-		print(invalid)  # in case it does not raise and we want to see what failed
+		print(invalid)  # in case it raises and we want to see what failed
 		with py.test.raises(SyntaxError):
 			ie.compile(invalid)
 
