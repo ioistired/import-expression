@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# encoding: utf-8
 
-# Copyright © 2018 Benjamin Mintz <bmintz@protonmail.com>
+# Copyright © 2018–2019 Io Mintz <io@mintz.cc>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the “Software”),
@@ -129,9 +128,9 @@ setuptools.setup(
 
 	license='MIT',
 
-	author='Benjamin Mintz',
-	author_email='bmintz@protonmail.com',
-	url='https://github.com/bmintz/import-expression-parser',
+	author='Io Mintz',
+	author_email='io@mintz.cc',
+	url='https://github.com/iomintz/import-expression-parser',
 
 	packages=['import_expression'],
 
