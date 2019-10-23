@@ -6,12 +6,12 @@
 Import Expression Parser converts code like this:
 
 ```py
-x = collections.deque!(maxsize=2)
+urllib.parse!.quote('hello there')
 ```
 
 Into this equivalent code:
 ```py
-x = importlib.import_module('collections').deque(maxsize=2)
+importlib.import_module('urllib.parse').quote('hello there')
 ```
 
 ## Usage
@@ -55,11 +55,13 @@ And all REPL sessions will use the import expression syntax.
 ## Limitations / Known Issues
 
 * Some invalid syntax, such as `urllib!.parse!` is not yet detected,
-  though that still works as though it was `urllib.parse!`.
+  though that still works as though it was `urllib.parse!` (see [issue #5]).
 * Due to the hell that is f-string parsing, and because `!` is already an operator inside f-strings,
   import expressions inside f-strings will likely never be supported.
 * Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals
   without an explicit `globals` argument.
+
+[issue #5]: https://github.com/iomintz/import-expression-parser/issues/5
 
 ## FAQ
 
