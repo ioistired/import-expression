@@ -25,10 +25,11 @@ import importlib as _importlib
 import inspect as _inspect
 import typing as _typing
 import types as _types
+from codeop import PyCF_DONT_IMPLY_DEDENT
 
 from . import constants
 from ._syntax import fix_syntax as _fix_syntax
-from ._parser import parse_ast as parse_ast
+from ._parser import parse_ast as _parse_ast
 from .version import __version__
 
 with _contextlib.suppress(NameError):
@@ -36,7 +37,7 @@ with _contextlib.suppress(NameError):
 
 __all__ = ('compile', 'parse', 'eval', 'exec', 'constants')
 
-def parse(source: _typing.Union[_ast.AST, str], *, mode='eval', filename=constants.DEFAULT_FILENAME):
+def parse(source: _typing.Union[_ast.AST, str], filename=constants.DEFAULT_FILENAME, mode='exec', *, flags=0):
 	"""
 	convert Import Expression Python™ to an AST
 
@@ -51,11 +52,12 @@ def parse(source: _typing.Union[_ast.AST, str], *, mode='eval', filename=constan
 	"""
 	# for some API compatibility with ast, allow parse(parse('foo')) to work
 	if isinstance(source, _ast.AST):
-		return parse_ast(source, filename=filename)
+		return _parse_ast(source, filename=filename)
 
-	fixed = _fix_syntax(source)
+	fixed = _fix_syntax(source, flags, filename=filename)
+	_builtins.compile(fixed, filename, mode, flags)  # handle DONT_IMPLY_DEDENT
 	tree = _ast.parse(fixed, filename, mode)
-	return parse_ast(tree, filename=filename)
+	return _parse_ast(tree, filename=filename)
 
 def compile(
 	source: _typing.Union[_ast.AST, str],
@@ -67,7 +69,7 @@ def compile(
 ):
 	"""compile a string or AST containing import expressions to a code object"""
 	if isinstance(source, str):
-		source = parse(source, filename=filename, mode=mode)
+		source = parse(source, filename=filename, mode=mode, flags=flags)
 
 	return _builtins.compile(source, filename, mode, flags, dont_inherit, optimize)
 

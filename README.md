@@ -29,28 +29,16 @@ To change this, pass in a filename via the `filename` kwarg.
 
 <!-- TODO document usage like jishaku or how one could build a REPL -->
 
+### REPL usage
+
+Run `python -m import_expression` for an import expression enabled REPL. \
+Run `python -m import_expression -a` for a REPL that supports both import expressions and top level `await` (3.8+).
+
 ### Monkey Patching the REPL
 
-```py
->>> urllib.parse!.quote
-  File "<stdin>", line 1
-    urllib.parse!.quote
-                ^
-SyntaxError: invalid syntax
->>> import import_expression.patch
->>> import_expression.patch.patch(globals())
->>> urllib.parse!.quote
-<function quote at 0xdeadbeef>
-```
-
-For convenience, you can also add the following two lines to your `sitecustomize.py`:
-
-```py
-import import_expression.patch
-import_expression.patch.patch()
-```
-
-And all REPL sessions will use the import expression syntax.
+`import_expression.patch.patch` is discouraged in favor of using `python -m import_expression`.
+It is not deprecated because `python -m import_expression` does not support tab completion
+or history past the current session.
 
 ## Limitations / Known Issues
 
