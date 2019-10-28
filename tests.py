@@ -61,6 +61,10 @@ def test_invalid_attribute_syntax():
 		with py.test.raises(SyntaxError):
 			ie.compile(invalid)
 
+def test_import_op_as_attr_name():
+	with py.test.raises(SyntaxError):
+		ie.compile('a.!.b')
+
 def test_del_store_import():
 	for test in (
 		'a!.b',
@@ -87,7 +91,6 @@ def test_invalid_del_store_import():
 			with py.test.raises(Exception):
 				ie.compile(test, mode='exec')
 
-@py.test.mark.xfail()  # TODO
 def test_lone_import_op():
 	with py.test.raises(SyntaxError):
 		ie.compile('!', mode='exec')

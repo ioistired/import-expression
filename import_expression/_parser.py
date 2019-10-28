@@ -31,10 +31,12 @@ def remove_string_right(haystack, needle):
 	# needle not found
 	return haystack
 
-remove_import_op = lambda name: remove_string_right(name, MARKER)
-has_any_import_op = lambda name: MARKER in name
-has_invalid_import_op = lambda name: MARKER in remove_import_op(name)
-has_valid_import_op = lambda name: name.endswith(MARKER) and remove_import_op(name)
+def remove_import_op(name): return remove_string_right(name, MARKER)
+def has_any_import_op(name): return MARKER in name
+def has_invalid_import_op(name):
+	removed = remove_import_op(name)
+	return MARKER in removed or not removed
+def has_valid_import_op(name): return name.endswith(MARKER) and remove_import_op(name)
 
 class Transformer(ast.NodeTransformer):
 	def __init__(self, *, filename=None):
@@ -82,6 +84,8 @@ class Transformer(ast.NodeTransformer):
 		"""convert an Attribute node's left hand side into an import call"""
 
 		attr = is_import = has_valid_import_op(node.attr)
+		if attr == '':
+			raise self._syntax_error('a valid identifier must precede an import op', node)
 
 		if not is_import:
 			return None
