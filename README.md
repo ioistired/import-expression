@@ -42,8 +42,6 @@ or history past the current session.
 
 ## Limitations / Known Issues
 
-* Some invalid syntax, such as `urllib!.parse!` is not yet detected,
-  though that still works as though it was `urllib.parse!` (see [issue #5]).
 * Due to the hell that is f-string parsing, and because `!` is already an operator inside f-strings,
   import expressions inside f-strings will likely never be supported.
 * Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals
