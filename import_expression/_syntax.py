@@ -49,11 +49,11 @@ def fix_syntax(s: str, flags=0, filename=DEFAULT_FILENAME) -> bytes:
 		message, (lineno, offset) = ex.args
 
 		try:
-			source_line = s.splitlines()[lineno-1]
+			source_line = s.splitlines()[lineno-2]
 		except IndexError:
 			source_line = None
 
-		raise SyntaxError(message, (filename, lineno, offset, source_line)) from None
+		raise SyntaxError(message, (filename, lineno-1, offset, source_line)) from None
 
 	if untokenizer.encoding is not None:
 		out = out.encode(untokenizer.encoding)

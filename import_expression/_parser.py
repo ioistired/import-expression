@@ -19,10 +19,12 @@
 # THE SOFTWARE.
 
 import ast
+import contextlib
+from collections import namedtuple
 
 from .constants import *
 
-parse_ast = lambda root_node, **kwargs: ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
+def parse_ast(root_node, **kwargs): return ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
 
 def remove_string_right(haystack, needle):
 	left, needle, right = haystack.rpartition(needle)
@@ -38,9 +40,12 @@ def has_invalid_import_op(name):
 	return MARKER in removed or not removed
 def has_valid_import_op(name): return name.endswith(MARKER) and remove_import_op(name)
 
+SyntaxErrorContext = namedtuple('SyntaxErrorContext', 'filename lineno column line')
+
 class Transformer(ast.NodeTransformer):
-	def __init__(self, *, filename=None):
+	def __init__(self, *, filename=None, source=None):
 		self.filename = filename
+		self.source_lines = source.splitlines() if source is not None else None
 
 	def visit_Attribute(self, node):
 		"""
@@ -220,5 +225,10 @@ class Transformer(ast.NodeTransformer):
 	del _call_on_name_or_attribute
 
 	def _syntax_error(self, message, node):
-		# last two items in the tuple are column offset and source code text
-		return SyntaxError(message, (self.filename, getattr(node, 'lineno', None), None, None))
+		lineno = getattr(node, 'lineno', None)
+		line = None
+		if self.source_lines is not None and lineno:
+			with contextlib.suppress(IndexError):
+				line = self.source_lines[lineno-1]
+		ctx = SyntaxErrorContext(filename=self.filename, lineno=lineno, column=None, line=line)
+		return SyntaxError(message, ctx)

@@ -55,9 +55,11 @@ def parse(source: _typing.Union[_ast.AST, str], filename=constants.DEFAULT_FILEN
 		return _parse_ast(source, filename=filename)
 
 	fixed = _fix_syntax(source, flags, filename=filename)
-	_builtins.compile(fixed, filename, mode, flags)  # handle DONT_IMPLY_DEDENT
+	if flags & PyCF_DONT_IMPLY_DEDENT:
+		# just run it for the syntax errors, which codeop picks up on
+		_builtins.compile(fixed, filename, mode, flags)
 	tree = _ast.parse(fixed, filename, mode)
-	return _parse_ast(tree, filename=filename)
+	return _parse_ast(tree, source=source, filename=filename)
 
 def compile(
 	source: _typing.Union[_ast.AST, str],
