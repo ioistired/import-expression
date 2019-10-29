@@ -25,11 +25,14 @@
 import __future__
 import ast
 import asyncio
+import atexit
 import code
 import codeop
 import concurrent.futures
+import contextlib
 import importlib
 import inspect
+import os.path
 import sys
 import traceback
 import threading
@@ -71,7 +74,7 @@ class ImportExpressionCompile:
 		return codeob
 
 class ImportExpressionInteractiveConsole(code.InteractiveConsole):
-	def __init__(self, locals=None, filename="<console>"):
+	def __init__(self, locals=None, filename='<console>'):
 		super().__init__(locals, filename)
 		self.locals.update({import_expression.constants.IMPORTER: importlib.import_module})
 		self.compile = ImportExpressionCommandCompiler()
@@ -173,9 +176,20 @@ def asyncio_main(repl_locals):
 
 if __name__ == '__main__':
 	try:
-		import readline	 # NoQA
+		import rlcompleter
+		import readline
 	except ImportError:
 		pass
+	else:
+		readline.parse_and_bind('tab: complete')
+		try:
+			readline.read_history_file(os.path.expanduser('~/.python_history'))
+		except FileNotFoundError:
+			pass
+		readline.set_auto_history(True)
+		# apparently you can't pass -1 for unlimited lines
+		# so we use the largest value we can
+		atexit.register(readline.append_history_file, 2**31-1, os.path.expanduser('~/.python_history'))
 
 	repl_locals = {
 		key: globals()[key] for key in [

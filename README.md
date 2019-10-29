@@ -22,6 +22,8 @@ importlib.import_module('urllib.parse').quote('hello there')
 Counter({'e': 4, 'd': 3, 'c': 2, 'b': 1})
 ```
 
+The other public functions are `exec`, `compile`, and `parse`. See their docstrings for details.
+
 By default, the filename for `SyntaxError`s is `<string>`.
 To change this, pass in a filename via the `filename` kwarg.
 
@@ -36,9 +38,7 @@ Run `python -m import_expression -a` for a REPL that supports both import expres
 
 ### Monkey Patching the REPL
 
-`import_expression.patch.patch` is discouraged in favor of using `python -m import_expression`.
-It is not deprecated because `python -m import_expression` does not support tab completion
-or history past the current session.
+`import_expression.patch.patch` is deprecated in favor of using `python -m import_expression`.
 
 ## Limitations / Known Issues
 

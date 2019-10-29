@@ -23,6 +23,7 @@ import contextlib
 import inspect
 import os
 import sys
+import warnings
 
 from . import eval as ie_eval, exec as ie_exec
 
@@ -32,7 +33,11 @@ def patch(globals=sys.modules['__main__'].__dict__):
 	If a line has a syntax error, import_expression.eval is attempted on it.
 	If this also results in a syntax error, import_expression.exec will be run instead.
 	Both cases will run in the context of the given globals dict, or if None, globals produced by statements will be saved to the __main__ module
+
+	This function is deprecated in favor of python -m import_expression.
 	"""
+	warnings.warn(DeprecationWarning('import_expression.patch is deprecated in favor of python -m import_expression'))
+
 	if not _is_tty():
 		raise RuntimeError('patch() only works at the REPL, where stdin is a TTY.')
 
