@@ -43,6 +43,7 @@ def _make_excepthook(globals):
 		if (
 			type(error) is not SyntaxError
 			or error.lineno != 1  # we don't have all the code
+			or error.text is None
 		):
 			return sys.__excepthook__(type(error), error, error.__traceback__)
 
