@@ -25,6 +25,7 @@
 import collections
 import io
 import re
+import string
 import tokenize as tokenize_
 from codeop import PyCF_DONT_IMPLY_DEDENT
 from token import *
@@ -55,27 +56,20 @@ def fix_syntax(s: str, flags=0, filename=DEFAULT_FILENAME) -> bytes:
 
 		raise SyntaxError(message, (filename, lineno-1, offset, source_line)) from None
 
-	if untokenizer.encoding is not None:
-		out = out.encode(untokenizer.encoding)
-
 	return out
 
 # taken from Lib/tokenize.py at 3.6
 # modified to support PyCF_DONT_IMPLY_DEDENT
-def _tokenize(readline, encoding, *, imply_dedent=True):
+# modified to always use unicode strings instead of bytes
+def _tokenize(readline, *, imply_dedent=True):
 	lnum = parenlev = continued = 0
-	numchars = '0123456789'
 	contstr, needcont = '', 0
 	contline = None
 	indents = [0]
 
-	if encoding is not None:
-		if encoding == "utf-8-sig":
-			# BOM will already have been stripped.
-			encoding = "utf-8"
-		yield TokenInfo(ENCODING, encoding, (0, 0), (0, 0), '')
-	last_line = b''
-	line = b''
+	yield TokenInfo(ENCODING, 'utf-8', (0, 0), (0, 0), '')
+	last_line = ''
+	line = ''
 	while True:	 # loop over lines in stream
 		try:
 			# We capture the value of the line variable here because
@@ -85,10 +79,8 @@ def _tokenize(readline, encoding, *, imply_dedent=True):
 			last_line = line
 			line = readline()
 		except StopIteration:
-			line = b''
+			line = ''
 
-		if encoding is not None:
-			line = line.decode(encoding)
 		lnum += 1
 		pos, max = 0, len(line)
 
@@ -164,8 +156,8 @@ def _tokenize(readline, encoding, *, imply_dedent=True):
 				token, initial = line[start:end], line[start]
 
 				if (
-					initial in numchars or	# ordinary number
-					(initial == '.' and token != '.' and token != '...')
+					initial in string.digits  # ordinary number
+					or (initial == '.' and token != '.' and token != '...')
 				):
 					yield TokenInfo(NUMBER, token, spos, epos, line)
 				elif initial in '\r\n':
@@ -313,4 +305,4 @@ class Untokenizer:
 		return "".join(self.tokens)
 
 def tokenize(string, *, imply_dedent=True):
-	return _tokenize(io.BytesIO(string.encode('utf-8')).readline, 'utf-8', imply_dedent=imply_dedent)
+	return _tokenize(io.StringIO(string).readline, imply_dedent=imply_dedent)
