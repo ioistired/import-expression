@@ -42,10 +42,8 @@ NEWLINES = {NEWLINE, tokenize_.NL}
 
 def fix_syntax(s: str, flags=0, filename=DEFAULT_FILENAME) -> bytes:
 	imply_dedent = not (flags & PyCF_DONT_IMPLY_DEDENT)
-	tokens = tokenize(s, imply_dedent=imply_dedent)
-	untokenizer = Untokenizer()
 	try:
-		out = untokenizer.untokenize(tokens)
+		tokens = list(tokenize(s, imply_dedent=imply_dedent))
 	except tokenize_.TokenError as ex:
 		message, (lineno, offset) = ex.args
 
@@ -55,6 +53,9 @@ def fix_syntax(s: str, flags=0, filename=DEFAULT_FILENAME) -> bytes:
 			source_line = None
 
 		raise SyntaxError(message, (filename, lineno-1, offset, source_line)) from None
+
+	untokenizer = Untokenizer()
+	out = untokenizer.untokenize(tokens)
 
 	return out
 
