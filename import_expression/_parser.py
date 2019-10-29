@@ -99,16 +99,19 @@ class Transformer(ast.NodeTransformer):
 
 	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
 		"""return a source-code representation of an Attribute node"""
-
 		is_import = self._has_valid_import_op(node)
 		if is_import and _seen_import_op:
 			raise self._syntax_error('multiple import expressions not allowed', node) from None
+		if is_import:
+			_seen_import_op = True
 
 		stripped = self._remove_import_op(node)
 		if type(node) is ast.Name:
+			if _seen_import_op:
+				raise self._syntax_error('multiple import expressions not allowed', node) from None
 			return stripped
 
-		lhs = self.attribute_source(node.value, is_import or _seen_import_op)
+		lhs = self.attribute_source(node.value, _seen_import_op)
 		rhs = stripped
 
 		return lhs + '.' + rhs

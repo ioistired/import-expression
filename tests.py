@@ -54,7 +54,6 @@ def test_valid_string_literals():
 		print(valid)
 		ie.compile(valid)
 
-@py.test.mark.xfail()  # TODO
 def test_invalid_attribute_syntax():
 	for invalid in invalid_attribute_cases:
 		print(invalid)  # in case it raises and we want to see what failed
