@@ -135,9 +135,13 @@ class ImportExpressionAsyncIOInteractiveConsole(ImportExpressionInteractiveConso
 				self.showtraceback()
 
 class REPLThread(threading.Thread):
+	def __init__(self, interact_kwargs):
+		self.interact_kwargs = interact_kwargs
+		super().__init__()
+
 	def run(self):
 		try:
-			console.interact()
+			console.interact(**self.interact_kwargs)
 		finally:
 			warnings.filterwarnings(
 				'ignore',
@@ -146,7 +150,7 @@ class REPLThread(threading.Thread):
 
 			loop.call_soon_threadsafe(loop.stop)
 
-def asyncio_main(repl_locals):
+def asyncio_main(repl_locals, interact_kwargs):
 	global console
 	global loop
 	global repl_future
@@ -159,7 +163,7 @@ def asyncio_main(repl_locals):
 	repl_future = None
 	repl_future_interrupted = False
 
-	repl_thread = REPLThread()
+	repl_thread = REPLThread(interact_kwargs)
 	repl_thread.daemon = True
 	repl_thread.start()
 
@@ -174,23 +178,41 @@ def asyncio_main(repl_locals):
 		else:
 			break
 
-if __name__ == '__main__':
-	try:
-		import rlcompleter
-		import readline
-	except ImportError:
-		pass
-	else:
-		readline.parse_and_bind('tab: complete')
-		try:
-			readline.read_history_file(os.path.expanduser('~/.python_history'))
-		except FileNotFoundError:
-			pass
-		readline.set_auto_history(True)
-		# apparently you can't pass -1 for unlimited lines
-		# so we use the largest value we can
-		atexit.register(readline.append_history_file, 2**31-1, os.path.expanduser('~/.python_history'))
+def parse_args():
+	import argparse
 
+	version_info = (
+		f'Import Expression Parser {import_expression.__version__}\n'
+		f'Python {sys.version}'
+	)
+
+	parser = argparse.ArgumentParser(prog='import_expression')
+	parser.add_argument('-q', '--quiet', action='store_true', help='hide the intro banner and exit message')
+	parser.add_argument('-a', '--asyncio', action='store_true', help='use the asyncio REPL (python 3.8+)')
+	parser.add_argument('-V', '--version', action='version', version=version_info)
+
+	return parser.parse_args()
+
+def setup_history_and_tab_completion(locals):
+	try:
+		import readline
+		import site
+		import rlcompleter
+	except ImportError:
+		# readline is not available on all platforms
+		return
+
+	try:
+		# set up history
+		sys.__interactivehook__()
+	except AttributeError:
+		# site has not set __interactivehook__ because python was run without site packages
+		return
+
+	# inform tab completion of what variables were set at the REPL
+	readline.set_completer(rlcompleter.Completer(locals).complete)
+
+def main():
 	repl_locals = {
 		key: globals()[key] for key in [
 			'__name__', '__package__',
@@ -199,11 +221,19 @@ if __name__ == '__main__':
 		if key in globals()
 	}
 
-	if '-a' in sys.argv:
+	setup_history_and_tab_completion(repl_locals)
+
+	args = parse_args()
+	interact_kwargs = dict(banner='' if args.quiet else None, exitmsg='' if args.quiet else None)
+
+	if args.asyncio:
 		if not SUPPORTS_ASYNCIO_REPL:
-			print(f'Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
+			print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
 			sys.exit(2)
-		asyncio_main(repl_locals)
+		asyncio_main(repl_locals, interact_kwargs)
 		sys.exit(0)
 
-	ImportExpressionInteractiveConsole(repl_locals).interact()
+	ImportExpressionInteractiveConsole(repl_locals).interact(**interact_kwargs)
+
+if __name__ == '__main__':
+	main()
