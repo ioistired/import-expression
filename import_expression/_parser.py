@@ -51,9 +51,7 @@ class Transformer(ast.NodeTransformer):
 		"""
 		convert Attribute nodes containing import expressions into Attribute nodes containing import calls
 		"""
-		not_to_be_transformed = self._check_node_syntax(node)
-		if not_to_be_transformed:
-			return not_to_be_transformed
+		self._ensure_only_valid_import_ops(node)
 
 		maybe_transformed = self._transform_attribute_attr(node)
 		if maybe_transformed:
@@ -69,9 +67,7 @@ class Transformer(ast.NodeTransformer):
 
 	def visit_Name(self, node):
 		"""convert solitary Names that have import expressions, such as "a!", into import calls"""
-		not_to_be_transformed = self._check_node_syntax(node)
-		if not_to_be_transformed:
-			return not_to_be_transformed
+		self._ensure_only_valid_import_ops(node)
 
 		is_import = id = has_valid_import_op(node.id)
 		if is_import:
@@ -89,8 +85,6 @@ class Transformer(ast.NodeTransformer):
 		"""convert an Attribute node's left hand side into an import call"""
 
 		attr = is_import = has_valid_import_op(node.attr)
-		if attr == '':
-			raise self._syntax_error('a valid identifier must precede an import op', node)
 
 		if not is_import:
 			return None
@@ -105,8 +99,6 @@ class Transformer(ast.NodeTransformer):
 	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
 		"""return a source-code representation of an Attribute node"""
 		is_import = self._has_valid_import_op(node)
-		if is_import and _seen_import_op:
-			raise self._syntax_error('multiple import expressions not allowed', node) from None
 		if is_import:
 			_seen_import_op = True
 
@@ -165,17 +157,6 @@ class Transformer(ast.NodeTransformer):
 		# ImportFrom nodes can have alias children that we also need to check
 		return super().generic_visit(node)
 
-	def _check_node_syntax(self, node):
-		if self._import_expression_candidate(node):
-			self._ensure_only_valid_import_ops(node)
-			return None  # to indicate that the node needs further processing
-		else:
-			self._ensure_no_import_ops(node)
-			return node  # node is fine as-is
-
-	def _import_expression_candidate(self, node):
-		return isinstance(node, (ast.Attribute, ast.Name))
-
 	def _ensure_only_valid_import_ops(self, node):
 		if self._for_any_child_node_string(has_invalid_import_op, node):
 			raise self._syntax_error(
@@ -212,15 +193,12 @@ class Transformer(ast.NodeTransformer):
 				to_check = node.attr
 			elif type(node) is ast.Name:
 				to_check = node.id
-			else:
-				raise TypeError(f'node must be an Attribute or Name node, not {type(node)}')
 			return func(to_check)
 
 		return staticmethod(checker)
 
 	_has_valid_import_op = _call_on_name_or_attribute(has_valid_import_op)
 	_remove_import_op = _call_on_name_or_attribute(remove_import_op)
-	_has_invalid_import_op = _call_on_name_or_attribute(has_invalid_import_op)
 
 	del _call_on_name_or_attribute
 

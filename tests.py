@@ -116,10 +116,13 @@ def test_invalid_def_syntax():
 		'class X!: pass',
 		'class Fo!o: pass'
 		'class !Foo: pass',
-	):
 		# note space around equals sign:
 		# class Y(Z!=1) is valid if Z.__ne__ returns a class
 		'class Y(Z! = 1): pass',
+	):
+		with py.test.raises(SyntaxError):
+			print(invalid)
+			ie.compile(invalid, mode='exec')
 
 def test_del_store_attribute():
 	class AttributeBox:
@@ -189,7 +192,6 @@ def test_eval_exec():
 
 	assert g['b']() == '?these_tests_are_overkill_for_a_debug_cog=1'
 
-
 	g = {}
 	ie.exec(textwrap.dedent("""
 	def foo(x):
@@ -200,6 +202,8 @@ def test_eval_exec():
 
 		def bar():
 			return urllib.parse!.unquote('can%20we%20make%20it%20into%20jishaku%3F')
+
+		bar.x = 1  # ensure normal attribute syntax is untouched
 
 		# the hanging indent on the following line is intentional
 		
@@ -229,3 +233,9 @@ def test_exec_code_object():
 	g = {}
 	ie.exec(code, globals=g)
 	assert g['foo']() is collections.Counter
+
+def test_normal_invalid_syntax():
+	"""ensure regular syntax errors are still caught"""
+	with py.test.raises(SyntaxError):
+		ie.compile(')')
+		ie.compile("'")
