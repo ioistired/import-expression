@@ -33,8 +33,10 @@ To change this, pass in a filename via the `filename` kwarg.
 
 ### REPL usage
 
-Run `python -m import_expression` for an import expression enabled REPL. \
-Run `python -m import_expression -a` for a REPL that supports both import expressions and top level `await` (3.8+).
+Run `import_expression` for an import expression enabled REPL. \
+Run `import_expression -a` for a REPL that supports both import expressions and top level `await` (3.8+).
+
+See `import_expression --help` for more details. 
 
 ### Monkey Patching the REPL
 

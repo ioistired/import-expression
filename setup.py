@@ -141,6 +141,12 @@ setuptools.setup(
 		],
 	},
 
+	entry_points={
+		'console_scripts': [
+			'import_expression = import_expression.__main__:main',
+		],
+	},
+
 	cmdclass=command_classes,
 
 	classifiers=[
