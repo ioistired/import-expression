@@ -46,24 +46,9 @@ See `import_expression --help` for more details.
 
 * Due to the hell that is f-string parsing, and because `!` is already an operator inside f-strings,
   import expressions inside f-strings will likely never be supported.
-* Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals
+* Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals or locals
   without an explicit `globals` argument.
-
-[issue #5]: https://github.com/iomintz/import-expression-parser/issues/5
-
-## FAQ
-
-*Actually asked questions for a new project! Golly gee!*
-
-* Why not just use `__import__('x')`? \
-  From the [discord.py server](https://discord.gg/r3sSKJJ):
-  > devon#4089: if i want to type `_("thing")` \
-  > devon#4089: i have to move my fingers between three different locations \
-  > devon#4089: both at the end and start of the string \
-  > lambda#0987: yeah and [*it's*] also a pain to type on mobile so ok \
-  > devon#4089: \<\<x\>\> is slightly less grating \
-
-  For context, the originally proposed syntax was \<\<x\>\>.
+* Unlike real operators, spaces before and after the import expression operator (such as `x ! .y` are not supported).
 
 ## [License](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE)
 
