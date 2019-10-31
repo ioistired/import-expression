@@ -98,8 +98,7 @@ class Transformer(ast.NodeTransformer):
 
 	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
 		"""return a source-code representation of an Attribute node"""
-		is_import = self._has_valid_import_op(node)
-		if is_import:
+		if self._has_valid_import_op(node):
 			_seen_import_op = True
 
 		stripped = self._remove_import_op(node)

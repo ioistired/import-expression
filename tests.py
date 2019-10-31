@@ -239,3 +239,17 @@ def test_normal_invalid_syntax():
 	with py.test.raises(SyntaxError):
 		ie.compile(')')
 		ie.compile("'")
+
+def test_dont_imply_dedent():
+	from codeop import PyCF_DONT_IMPLY_DEDENT
+	with py.test.raises(SyntaxError):
+		ie.compile('def foo():\n\tpass', mode='single', flags=PyCF_DONT_IMPLY_DEDENT)
+
+def test_parse_ast():
+	from typing import Any
+	node = ie.parse(ie.parse('typing!.Any', mode='eval'))
+	assert ie.eval(node) is Any
+
+def test_locals_arg():
+	ie.exec('assert locals() is globals()', {})
+	ie.exec('assert locals() is not globals()', {}, {})
