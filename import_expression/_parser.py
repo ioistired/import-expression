@@ -204,9 +204,10 @@ class Transformer(ast.NodeTransformer):
 
 	def _syntax_error(self, message, node):
 		lineno = getattr(node, 'lineno', None)
+		column = getattr(node, 'col_offset', None)
 		line = None
 		if self.source_lines is not None and lineno:
 			with contextlib.suppress(IndexError):
 				line = self.source_lines[lineno-1]
-		ctx = SyntaxErrorContext(filename=self.filename, lineno=lineno, column=None, line=line)
+		ctx = SyntaxErrorContext(filename=self.filename, lineno=lineno, column=column, line=line)
 		return SyntaxError(message, ctx)
