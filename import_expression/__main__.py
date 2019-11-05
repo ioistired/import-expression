@@ -213,6 +213,12 @@ def setup_history_and_tab_completion(locals):
 	readline.set_completer(rlcompleter.Completer(locals).complete)
 
 def main():
+	cwd = os.getcwd()
+	if cwd not in sys.path:
+		# if invoked as a script, the user would otherwise not be able to import modules from the cwd,
+		# which would be inconsistent with `python -m import_expression`.
+		sys.path.insert(0, cwd)
+
 	repl_locals = {
 		key: globals()[key] for key in [
 			'__name__', '__package__',
