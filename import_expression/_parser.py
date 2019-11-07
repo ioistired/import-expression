@@ -43,9 +43,12 @@ def has_any_import_op(name): return MARKER in name
 def has_invalid_import_op(name):
 	removed = remove_import_op(name)
 	return MARKER in removed or not removed
-def has_valid_import_op(name): return name.endswith(MARKER) and remove_import_op(name)
+def find_valid_imported_name(name):
+	"""return a name preceding an import op, or False if there isn't one"""
+	return name.endswith(MARKER) and remove_import_op(name)
 
-SyntaxErrorContext = namedtuple('SyntaxErrorContext', 'filename lineno column line')
+# source: CPython Objects/exceptions.c:1362 at v3.8.0
+SyntaxErrorContext = namedtuple('SyntaxErrorContext', 'filename lineno offset text')
 
 class Transformer(ast.NodeTransformer):
 	def __init__(self, *, filename=None, source=None):
@@ -74,8 +77,8 @@ class Transformer(ast.NodeTransformer):
 		"""convert solitary Names that have import expressions, such as "a!", into import calls"""
 		self._ensure_only_valid_import_ops(node)
 
-		is_import = id = has_valid_import_op(node.id)
-		if is_import:
+		id = find_valid_imported_name(node.id)
+		if id:
 			return ast.copy_location(self.import_call(id, node.ctx), node)
 		return node
 
@@ -89,9 +92,8 @@ class Transformer(ast.NodeTransformer):
 	def _transform_attribute_attr(self, node):
 		"""convert an Attribute node's left hand side into an import call"""
 
-		attr = is_import = has_valid_import_op(node.attr)
-
-		if not is_import:
+		attr = find_valid_imported_name(node.attr)
+		if not attr:
 			return None
 
 		node.attr = attr
@@ -103,7 +105,7 @@ class Transformer(ast.NodeTransformer):
 
 	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
 		"""return a source-code representation of an Attribute node"""
-		if self._has_valid_import_op(node):
+		if self._find_valid_imported_name(node):
 			_seen_import_op = True
 
 		stripped = self._remove_import_op(node)
@@ -201,19 +203,19 @@ class Transformer(ast.NodeTransformer):
 
 		return staticmethod(checker)
 
-	_has_valid_import_op = _call_on_name_or_attribute(has_valid_import_op)
+	_find_valid_imported_name = _call_on_name_or_attribute(find_valid_imported_name)
 	_remove_import_op = _call_on_name_or_attribute(remove_import_op)
 
 	del _call_on_name_or_attribute
 
 	def _syntax_error(self, message, node):
 		lineno = getattr(node, 'lineno', None)
-		column = getattr(node, 'col_offset', None)
+		offset = getattr(node, 'col_offset', None)
 		line = None
 		if self.source_lines is not None and lineno:
 			with contextlib.suppress(IndexError):
 				line = self.source_lines[lineno-1]
-		ctx = SyntaxErrorContext(filename=self.filename, lineno=lineno, column=column, line=line)
+		ctx = SyntaxErrorContext(filename=self.filename, lineno=lineno, offset=offset, text=line)
 		return SyntaxError(message, ctx)
 
 class ListingTransformer(Transformer):
