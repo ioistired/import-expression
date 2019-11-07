@@ -74,7 +74,7 @@ def test_del_store_import():
 
 		for test in del_, store:
 			print(test)
-			ie.compile(test, mode='exec')
+			ie.compile(test)
 
 def test_invalid_del_store_import():
 	for test in (
@@ -88,11 +88,11 @@ def test_invalid_del_store_import():
 			# we use Exception instead of SyntaxError because this error may be caught
 			# by builtins.compile (raises ValueError) or ie.parse (raises SyntaxError)
 			with py.test.raises(Exception):
-				ie.compile(test, mode='exec')
+				ie.compile(test)
 
 def test_lone_import_op():
 	with py.test.raises(SyntaxError):
-		ie.compile('!', mode='exec')
+		ie.compile('!')
 
 def test_invalid_argument_syntax():
 	for invalid in (
@@ -106,7 +106,7 @@ def test_invalid_argument_syntax():
 	):
 		with py.test.raises(SyntaxError):
 			print(invalid)
-			ie.compile(invalid, mode='exec')
+			ie.compile(invalid)
 
 def test_invalid_def_syntax():
 	for invalid in (
@@ -122,7 +122,7 @@ def test_invalid_def_syntax():
 	):
 		with py.test.raises(SyntaxError):
 			print(invalid)
-			ie.compile(invalid, mode='exec')
+			ie.compile(invalid)
 
 def test_del_store_attribute():
 	class AttributeBox:
@@ -252,6 +252,12 @@ def test_parse_ast():
 def test_locals_arg():
 	ie.exec('assert locals() is globals()', {})
 	ie.exec('assert locals() is not globals()', {}, {})
+
+def test_update_globals():
+	import collections
+	code = ie.compile('collections!.Counter', mode='eval')
+	g = ie.update_globals({})
+	assert eval(code, g) is collections.Counter
 
 def test_find_imports():
 	with py.test.raises(SyntaxError):

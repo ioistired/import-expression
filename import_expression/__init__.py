@@ -36,11 +36,11 @@ from .version import __version__
 with _contextlib.suppress(NameError):
 	del version
 
-__all__ = ('compile', 'parse', 'eval', 'exec', 'constants')
+__all__ = ('compile', 'parse', 'eval', 'exec', 'constants', 'find_imports', 'update_globals')
 
 _source = _typing.Union[_ast.AST, str]
 
-def parse(source: _source, filename=constants.DEFAULT_FILENAME, mode='exec', *, flags=0):
+def parse(source: _source, filename=constants.DEFAULT_FILENAME, mode='exec', *, flags=0, **kwargs) -> _ast.AST:
 	"""
 	convert Import Expression Python™ to an AST
 
@@ -52,6 +52,8 @@ def parse(source: _source, filename=constants.DEFAULT_FILENAME, mode='exec', *, 
 	Exec mode returns a :class:` Module` object. Source represents zero or more statements.
 
 	Filename is used in tracebacks, in case of invalid syntax or runtime exceptions.
+
+	The remaining keyword arguments are passed to ast.parse as is.
 	"""
 	# for some API compatibility with ast, allow parse(parse('foo')) to work
 	if isinstance(source, _ast.AST):
@@ -61,13 +63,13 @@ def parse(source: _source, filename=constants.DEFAULT_FILENAME, mode='exec', *, 
 	if flags & PyCF_DONT_IMPLY_DEDENT:
 		# just run it for the syntax errors, which codeop picks up on
 		_builtins.compile(fixed, filename, mode, flags)
-	tree = _ast.parse(fixed, filename, mode)
+	tree = _ast.parse(fixed, filename, mode, **kwargs)
 	return _parse_ast(tree, source=source, filename=filename)
 
 def compile(
 	source: _source,
 	filename=constants.DEFAULT_FILENAME,
-	mode='eval',
+	mode='exec',
 	flags=0,
 	dont_inherit=False,
 	optimize=-1,
@@ -99,17 +101,6 @@ def exec(source: _code, globals=None, locals=None):
 		return _builtins.eval(source, globals, locals)
 	_builtins.eval(compile(source, constants.DEFAULT_FILENAME, 'exec'), globals, locals)
 
-def _parse_eval_exec_args(globals, locals):
-	if globals is None:  # can't use truthiness because {} is falsy
-		globals = {}
-
-	globals.update({constants.IMPORTER: _importlib.import_module})
-
-	if locals is None:
-		locals = globals
-
-	return globals, locals
-
 def find_imports(source: str, filename=constants.DEFAULT_FILENAME, mode='exec'):
 	"""return a list of all module names required by the given source code."""
 	# passing an AST is not supported because it doesn't make sense to.
@@ -118,3 +109,25 @@ def find_imports(source: str, filename=constants.DEFAULT_FILENAME, mode='exec'):
 	fixed = _fix_syntax(source, filename=filename)
 	tree = _ast.parse(fixed, filename, mode)
 	return _find_imports(tree, filename=filename)
+
+def update_globals(globals: dict) -> dict:
+	"""Ensure that the variables required for eval/exec are present in the given dict.
+	Note that import_expression.eval and import_expression.exec do this for you automatically.
+	Calling this function yourself is only necessary if you want to call builtins.eval or builtins.exec
+	with the return value of import_expression.compile.
+
+	This function always returns the passed dictionary to make expression chaining easier.
+	"""
+	globals.update({constants.IMPORTER: _importlib.import_module})
+	return globals
+
+def _parse_eval_exec_args(globals, locals):
+	if globals is None:  # can't use truthiness because {} is falsy
+		globals = {}
+
+	update_globals(globals)
+
+	if locals is None:
+		locals = globals
+
+	return globals, locals
