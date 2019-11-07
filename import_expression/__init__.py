@@ -122,7 +122,7 @@ def update_globals(globals: dict) -> dict:
 	return globals
 
 def _parse_eval_exec_args(globals, locals):
-	if globals is None:  # can't use truthiness because {} is falsy
+	if globals is None:
 		globals = {}
 
 	update_globals(globals)

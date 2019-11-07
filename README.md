@@ -27,10 +27,6 @@ The other public functions are `exec`, `compile`, `parse`, and `find_imports`. S
 By default, the filename for `SyntaxError`s is `<string>`.
 To change this, pass in a filename via the `filename` kwarg.
 
-### AST usage
-
-<!-- TODO document usage like jishaku or how one could build a REPL -->
-
 ### REPL usage
 
 Run `import_expression` for an import expression enabled REPL. \
