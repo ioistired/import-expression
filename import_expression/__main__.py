@@ -161,15 +161,16 @@ class ImportExpressionCompleter(rlcompleter.Completer):
 		mod_name = mod_names[0]
 		mod_name_with_import_op = mod_name + constants.IMPORT_OP
 		# don't import the module in our current namespace, otherwise tab completion would also have side effects
-		namespace = {mod_name: importlib.import_module(mod_name)}
-		completer = type(self)(namespace)
-		return [
+		old_namespace = self.namespace
+		self.namespace = {mod_name: importlib.import_module(mod_name)}
+		res = [
 			# this is a hack because it also replaces non-identifiers
 			# however, readline / rlcompleter only operates on identifiers so it's OK i guess
 			# we need to replace so that the tab completions all have the correct prefix
 			match.replace(mod_name, mod_name_with_import_op)
 			for match
-			in super(type(completer), completer).attr_matches(text.replace(mod_name_with_import_op, mod_name))]
+			in super().attr_matches(text.replace(mod_name_with_import_op, mod_name))]
+		self.namespace = old_namespace
 		return res
 
 def asyncio_main(repl_locals, interact_kwargs):
