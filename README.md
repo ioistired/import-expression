@@ -38,10 +38,6 @@ Run `import_expression -a` for a REPL that supports both import expressions and 
 
 See `import_expression --help` for more details. 
 
-### Monkey Patching the REPL
-
-`import_expression.patch.patch` is deprecated in favor of using `python -m import_expression`.
-
 ## Limitations / Known Issues
 
 * Due to the hell that is f-string parsing, and because `!` is already an operator inside f-strings,
