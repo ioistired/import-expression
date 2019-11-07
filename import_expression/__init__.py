@@ -30,6 +30,7 @@ from codeop import PyCF_DONT_IMPLY_DEDENT
 from . import constants
 from ._syntax import fix_syntax as _fix_syntax
 from ._parser import parse_ast as _parse_ast
+from ._parser import find_imports as _find_imports
 from .version import __version__
 
 with _contextlib.suppress(NameError):
@@ -37,7 +38,9 @@ with _contextlib.suppress(NameError):
 
 __all__ = ('compile', 'parse', 'eval', 'exec', 'constants')
 
-def parse(source: _typing.Union[_ast.AST, str], filename=constants.DEFAULT_FILENAME, mode='exec', *, flags=0):
+_source = _typing.Union[_ast.AST, str]
+
+def parse(source: _source, filename=constants.DEFAULT_FILENAME, mode='exec', *, flags=0):
 	"""
 	convert Import Expression Python™ to an AST
 
@@ -62,7 +65,7 @@ def parse(source: _typing.Union[_ast.AST, str], filename=constants.DEFAULT_FILEN
 	return _parse_ast(tree, source=source, filename=filename)
 
 def compile(
-	source: _typing.Union[_ast.AST, str],
+	source: _source,
 	filename=constants.DEFAULT_FILENAME,
 	mode='eval',
 	flags=0,
@@ -106,3 +109,12 @@ def _parse_eval_exec_args(globals, locals):
 		locals = globals
 
 	return globals, locals
+
+def find_imports(source: str, filename=constants.DEFAULT_FILENAME, mode='exec'):
+	"""return a list of all module names required by the given source code."""
+	# passing an AST is not supported because it doesn't make sense to.
+	# either the AST is one that we made, in which case the imports have already been made and calling parse_ast again
+	# would find no imports, or it's an AST made by parsing the output of fix_syntax, which is internal.
+	fixed = _fix_syntax(source, filename=filename)
+	tree = _ast.parse(fixed, filename, mode)
+	return _find_imports(tree, filename=filename)

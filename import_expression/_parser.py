@@ -26,6 +26,11 @@ from .constants import *
 
 def parse_ast(root_node, **kwargs): return ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
 
+def find_imports(root_node, **kwargs):
+	t = ListingTransformer(**kwargs)
+	t.visit(root_node)
+	return t.imports
+
 def remove_string_right(haystack, needle):
 	left, needle, right = haystack.rpartition(needle)
 	if not right:
@@ -71,11 +76,11 @@ class Transformer(ast.NodeTransformer):
 
 		is_import = id = has_valid_import_op(node.id)
 		if is_import:
-			return ast.copy_location(self._import_call(id, node.ctx), node)
+			return ast.copy_location(self.import_call(id, node.ctx), node)
 		return node
 
 	@staticmethod
-	def _import_call(attribute_source, ctx):
+	def import_call(attribute_source, ctx):
 		return ast.Call(
 			func=ast.Name(id=IMPORTER, ctx=ctx),
 			args=[ast.Str(attribute_source)],
@@ -93,7 +98,7 @@ class Transformer(ast.NodeTransformer):
 		as_source = self.attribute_source(node)
 
 		return ast.copy_location(
-			self._import_call(as_source, node.ctx),
+			self.import_call(as_source, node.ctx),
 			node)
 
 	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
@@ -210,3 +215,14 @@ class Transformer(ast.NodeTransformer):
 				line = self.source_lines[lineno-1]
 		ctx = SyntaxErrorContext(filename=self.filename, lineno=lineno, column=column, line=line)
 		return SyntaxError(message, ctx)
+
+class ListingTransformer(Transformer):
+	"""like the parent class but lists all imported modules as self.imports"""
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.imports = []
+
+	def import_call(self, attribute_source, *args, **kwargs):
+		self.imports.append(attribute_source)
+		return super().import_call(attribute_source, *args, **kwargs)

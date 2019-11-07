@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import builtins
+import textwrap
 
 import py.test
 
@@ -176,7 +176,6 @@ def test_import_statement():
 
 def test_eval_exec():
 	import ipaddress
-	import textwrap
 	import urllib.parse
 
 	assert ie.eval('collections!.Counter(urllib.parse!.quote("foo"))') == dict(f=1, o=2)
@@ -194,22 +193,22 @@ def test_eval_exec():
 
 	g = {}
 	ie.exec(textwrap.dedent("""
-	def foo(x):
-		x = x + 1
-		x = x + 1
-		x = x + 1
-		x = x + 1
+		def foo(x):
+			x = x + 1
+			x = x + 1
+			x = x + 1
+			x = x + 1
 
-		def bar():
-			return urllib.parse!.unquote('can%20we%20make%20it%20into%20jishaku%3F')
+			def bar():
+				return urllib.parse!.unquote('can%20we%20make%20it%20into%20jishaku%3F')
 
-		bar.x = 1  # ensure normal attribute syntax is untouched
+			bar.x = 1  # ensure normal attribute syntax is untouched
 
-		# the hanging indent on the following line is intentional
-		
+			# the hanging indent on the following line is intentional
+			
 
-		return bar()"""
-	), g)
+			return bar()
+	"""), g)
 
 	assert g['foo'](1) == 'can we make it into jishaku?'
 
@@ -253,3 +252,15 @@ def test_parse_ast():
 def test_locals_arg():
 	ie.exec('assert locals() is globals()', {})
 	ie.exec('assert locals() is not globals()', {}, {})
+
+def test_find_imports():
+	with py.test.raises(SyntaxError):
+		ie.find_imports('x; y', mode='eval')
+
+	assert set(ie.find_imports(textwrap.dedent("""
+		x = a!
+		y = a.b!.c
+		z = d.e.f
+	"""))) == {'a', 'a.b'}
+
+	assert ie.find_imports('urllib.parse!.quote', mode='eval') == ['urllib.parse']

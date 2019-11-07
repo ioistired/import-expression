@@ -33,6 +33,7 @@ import contextlib
 import importlib
 import inspect
 import os.path
+import rlcompleter
 import sys
 import traceback
 import threading
@@ -42,6 +43,7 @@ from asyncio import futures
 from codeop import PyCF_DONT_IMPLY_DEDENT
 
 import import_expression
+from import_expression import constants
 
 features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
 
@@ -76,7 +78,7 @@ class ImportExpressionCompile:
 class ImportExpressionInteractiveConsole(code.InteractiveConsole):
 	def __init__(self, locals=None, filename='<console>'):
 		super().__init__(locals, filename)
-		self.locals.update({import_expression.constants.IMPORTER: importlib.import_module})
+		self.locals.update({constants.IMPORTER: importlib.import_module})
 		self.compile = ImportExpressionCommandCompiler()
 
 # we must vendor this class because it creates global variables that the main code depends on
@@ -150,6 +152,26 @@ class REPLThread(threading.Thread):
 
 			loop.call_soon_threadsafe(loop.stop)
 
+class ImportExpressionCompleter(rlcompleter.Completer):
+	def attr_matches(self, text):
+		# hack to help ensure valid syntax
+		mod_names = import_expression.find_imports(text.rstrip().rstrip('.'))
+		if not mod_names:
+			return super().attr_matches(text)
+		mod_name = mod_names[0]
+		mod_name_with_import_op = mod_name + constants.IMPORT_OP
+		# don't import the module in our current namespace, otherwise tab completion would also have side effects
+		namespace = {mod_name: importlib.import_module(mod_name)}
+		completer = type(self)(namespace)
+		return [
+			# this is a hack because it also replaces non-identifiers
+			# however, readline / rlcompleter only operates on identifiers so it's OK i guess
+			# we need to replace so that the tab completions all have the correct prefix
+			match.replace(mod_name, mod_name_with_import_op)
+			for match
+			in super(type(completer), completer).attr_matches(text.replace(mod_name_with_import_op, mod_name))]
+		return res
+
 def asyncio_main(repl_locals, interact_kwargs):
 	global console
 	global loop
@@ -209,8 +231,10 @@ def setup_history_and_tab_completion(locals):
 		# site has not set __interactivehook__ because python was run without site packages
 		return
 
+	# allow completion of text containing an import op (otherwise it is treated as a word boundary)
+	readline.set_completer_delims(readline.get_completer_delims().replace(constants.IMPORT_OP, ''))
 	# inform tab completion of what variables were set at the REPL
-	readline.set_completer(rlcompleter.Completer(locals).complete)
+	readline.set_completer(ImportExpressionCompleter(locals).complete)
 
 def main():
 	cwd = os.getcwd()
