@@ -167,7 +167,7 @@ class ImportExpressionCompleter(rlcompleter.Completer):
 			# this is a hack because it also replaces non-identifiers
 			# however, readline / rlcompleter only operates on identifiers so it's OK i guess
 			# we need to replace so that the tab completions all have the correct prefix
-			match.replace(mod_name, mod_name_with_import_op)
+			match.replace(mod_name, mod_name_with_import_op, 1)
 			for match
 			in super().attr_matches(text.replace(mod_name_with_import_op, mod_name))]
 		self.namespace = old_namespace
