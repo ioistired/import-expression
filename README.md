@@ -40,7 +40,7 @@ See `import_expression --help` for more details.
   import expressions inside f-strings will likely never be supported.
 * Due to python limitations, results of `import_expression.exec` will have no effect on the caller's globals or locals
   without an explicit `globals` argument.
-* Unlike real operators, spaces before and after the import expression operator (such as `x ! .y` are not supported).
+* Unlike real operators, spaces before and after the import expression operator (such as `x ! .y`) are not supported.
 
 ## [License](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE)
 
