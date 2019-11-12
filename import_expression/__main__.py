@@ -162,7 +162,11 @@ class ImportExpressionCompleter(rlcompleter.Completer):
 		mod_name_with_import_op = mod_name + constants.IMPORT_OP
 		# don't import the module in our current namespace, otherwise tab completion would also have side effects
 		old_namespace = self.namespace
-		self.namespace = {mod_name: importlib.import_module(mod_name)}
+		# __import__ is used instead of importlib.import_module
+		# because __import__ is designed for updating module-level globals, which we are doing.
+		# Specifically, __import__('x.y') returns x, which is necessary for tab completion.
+		mod = __import__(mod_name)
+		self.namespace = {mod.__name__: mod}
 		res = [
 			# this is a hack because it also replaces non-identifiers
 			# however, readline / rlcompleter only operates on identifiers so it's OK i guess
