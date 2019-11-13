@@ -213,7 +213,7 @@ def parse_args():
 		f'Python {sys.version}'
 	)
 
-	parser = argparse.ArgumentParser(prog='import_expression')
+	parser = argparse.ArgumentParser(prog='import_expression', description='a python REPL with inline import support')
 	parser.add_argument('-q', '--quiet', action='store_true', help='hide the intro banner and exit message')
 	parser.add_argument('-a', '--asyncio', action='store_true', help='use the asyncio REPL (python 3.8+)')
 	parser.add_argument('-V', '--version', action='version', version=version_info)
