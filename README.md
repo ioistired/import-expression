@@ -65,4 +65,4 @@ See `import_expression --help` for more details.
 ## [License](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE)
 
 Copyright © 2018–2019 Io Mintz <<io@mintz.cc>>. All Rights Reserved. \
-Licensed under the MIT License. See the LICENSE.md file for details.
+Licensed under the MIT License. See the LICENSE file for details.
