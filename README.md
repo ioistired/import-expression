@@ -27,6 +27,26 @@ The other public functions are `exec`, `compile`, `parse`, `find_imports`, and `
 By default, the filename for `SyntaxError`s is `<string>`.
 To change this, pass in a filename via the `filename` kwarg.
 
+### Reusing compiled code objects
+
+import_expression.eval/exec/compile should not be passed strings in a tight loop. \
+Doing so will recompile the string every time. Instead, you should pre-compile the string to a code object
+and pass that to import_expression.eval / import_expression.exec.
+For example, instead of this:
+
+```py
+for line in sys.stdin:
+	print(import_expression.eval('foo!.bar(l)', dict(l=line))
+```
+
+Prefer this:
+
+```py
+code = import_expression.compile('foo!.bar(l)', mode='eval')
+for line in sys.stdin:
+	print(import_expression.eval(code, dict(l=line)))
+```
+
 ### REPL usage
 
 Run `import_expression` for an import expression enabled REPL. \
