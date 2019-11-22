@@ -94,19 +94,6 @@ class UnitTestCommand(
 ):
 	pass
 
-class ReplCommand(
-	metaclass=ScriptCommand,
-	name='repl',
-	description='start a REPL that supports top level import expressions',
-	commands=(
-		sys.executable,
-		'-ic',
-		'import import_expression.patch\n'
-		'import_expression.patch.patch(globals())'
-	)
-):
-	pass
-
 class ReleaseCommand(
 	metaclass=ScriptCommand,
 	name='release',
