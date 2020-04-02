@@ -1,4 +1,4 @@
-Copyright © 2018–2019 Io Mintz <io@mintz.cc>
+Copyright © 2018–2020 Io Mintz <io@mintz.cc>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the “Software”),
@@ -20,8 +20,9 @@ THE SOFTWARE.
 
 ===========================================================================
 
-Portions of this software, specifically import_expression/__main__.py
-and import_expression/_syntax.py, contain software vendored from the CPython standard library.
+Portions of this software, specifically import_expression/__main__.py,
+import_expression/_syntax.py, and import_expression/codec_compat.py
+contain software vendored from the CPython standard library.
 Its license folllows:
 
 Copyright © 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
@@ -76,3 +77,5 @@ products or services of Licensee, or any third party.
 8. By copying, installing or otherwise using Python, Licensee
 agrees to be bound by the terms and conditions of this License
 Agreement.
+
+===========================================================================

@@ -26,8 +26,10 @@ import os
 import os.path
 import setuptools
 import subprocess
+import shutil
 import sys
 import typing
+from distutils.sysconfig import get_python_lib as site_packages_path
 
 logging.basicConfig(level=logging.INFO)
 here = os.path.realpath(os.path.dirname(__file__))
@@ -105,6 +107,9 @@ class ReleaseCommand(
 ):
 	pass
 
+# hack but data_files= doesn't seem to work
+shutil.copy('import_expression.pth', site_packages_path())
+
 setuptools.setup(
 	name='import_expression',
 	version=version,
@@ -122,6 +127,9 @@ setuptools.setup(
 	packages=['import_expression'],
 
 	extras_require={
+		'codec': [
+			'astunparse>=1.6.3,<2.0.0',
+		],
 		'test': [
 			'pytest',
 			'pytest-cov',
