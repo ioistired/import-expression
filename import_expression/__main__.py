@@ -45,6 +45,13 @@ from codeop import PyCF_DONT_IMPLY_DEDENT
 import import_expression
 from import_expression import constants
 
+if os.path.basename(sys.argv[0]) == 'import_expression':
+	import warnings
+	warnings.warn(UserWarning(
+		'The import_expression alias is deprecated, and will be removed in v2.0. '
+		'Please use import-expression (with a hyphen) instead.'
+	))
+
 features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
 
 try:
@@ -213,7 +220,7 @@ def parse_args():
 		f'Python {sys.version}'
 	)
 
-	parser = argparse.ArgumentParser(prog='import_expression', description='a python REPL with inline import support')
+	parser = argparse.ArgumentParser(prog='import-expression', description='a python REPL with inline import support')
 	parser.add_argument('-q', '--quiet', action='store_true', help='hide the intro banner and exit message')
 	parser.add_argument('-a', '--asyncio', action='store_true', help='use the asyncio REPL (python 3.8+)')
 	parser.add_argument('-V', '--version', action='version', version=version_info)
