@@ -155,10 +155,11 @@ setuptools.setup(
 
 	packages=['import_expression'],
 
+	install_requires=[
+		'astunparse>=1.6.3,<2.0.0',
+	],
+
 	extras_require={
-		'codec': [
-			'astunparse>=1.6.3,<2.0.0',
-		],
 		'test': [
 			'pytest',
 			'pytest-cov',
@@ -169,6 +170,7 @@ setuptools.setup(
 		'console_scripts': [
 			'import_expression = import_expression.__main__:main',
 			'import-expression = import_expression.__main__:main',
+			'import-expression-rewrite = import_expression._main2:main',
 		],
 	},
 
