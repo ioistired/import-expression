@@ -199,6 +199,8 @@ class Transformer(ast.NodeTransformer):
 				to_check = node.attr
 			elif type(node) is ast.Name:
 				to_check = node.id
+			else:
+				raise self._syntax_error('invalid syntax', node)
 			return func(to_check)
 
 		return staticmethod(checker)
