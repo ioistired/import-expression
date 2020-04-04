@@ -61,10 +61,15 @@ This file, when run, will print True/False. For maximum laziness you can also do
 
 ### REPL usage
 
-Run `import_expression` for an import expression enabled REPL. \
-Run `import_expression -a` for a REPL that supports both import expressions and top level `await` (3.8+).
+Run `import-expression` for an import expression enabled REPL. \
+Run `import-expression -a` for a REPL that supports both import expressions and top level `await` (3.8+).
 
-See `import_expression --help` for more details.
+See `import-expression --help` for more details.
+
+### File rewriter
+
+Run `import-expression-rewrite <file.py>` to rewrite a file containing import expressions to standard Python. \
+Add the `-i` flag to rewrite in-place.
 
 ## Limitations / Known Issues
 
