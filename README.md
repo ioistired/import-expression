@@ -74,7 +74,7 @@ See `import_expression --help` for more details.
   without an explicit `globals` argument.
 * Unlike real operators, spaces before and after the import expression operator (such as `x ! .y`) are not supported.
 
-## [License](https://github.com/bmintz/import-expression-parser/blob/main/LICENSE)
+## [License](https://github.com/iomintz/import-expression-parser/blob/main/LICENSE)
 
 Copyright © 2018–2019 Io Mintz <<io@mintz.cc>>. All Rights Reserved. \
 Licensed under the MIT License. See the LICENSE file for details.

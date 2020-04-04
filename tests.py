@@ -148,7 +148,7 @@ def test_del_store_attribute():
 	assert not hasattr(x, 'y')
 
 def test_kwargs():
-	# See https://github.com/bmintz/import-expression-parser/issues/1
+	# see issue #1
 	ie.compile('f(**a)', mode='eval')
 
 	import collections
