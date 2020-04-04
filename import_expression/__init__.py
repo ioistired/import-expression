@@ -38,7 +38,7 @@ with _contextlib.suppress(NameError):
 
 __all__ = ('compile', 'parse', 'eval', 'exec', 'constants', 'find_imports', 'update_globals')
 
-_source = _typing.Union[_ast.AST, str]
+_source = _typing.Union[_ast.AST, _typing.AnyStr]
 
 def parse(source: _source, filename=constants.DEFAULT_FILENAME, mode='exec', *, flags=0, **kwargs) -> _ast.AST:
 	"""
@@ -75,7 +75,7 @@ def compile(
 	optimize=-1,
 ):
 	"""compile a string or AST containing import expressions to a code object"""
-	if isinstance(source, str):
+	if isinstance(source, (str, bytes)):
 		source = parse(source, filename=filename, mode=mode, flags=flags)
 
 	return _builtins.compile(source, filename, mode, flags, dont_inherit, optimize)

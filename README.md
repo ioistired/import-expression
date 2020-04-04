@@ -48,12 +48,23 @@ for line in sys.stdin:
 	print(import_expression.eval(code, dict(l=line)))
 ```
 
+### Custom encoding
+
+First, install `import_expression[codec]`.
+
+```py
+# encoding: import_expression
+print(typing!.TYPE_CHECKING)
+```
+
+This file, when run, will print True/False. For maximum laziness you can also do `#coding:ie`.
+
 ### REPL usage
 
 Run `import_expression` for an import expression enabled REPL. \
 Run `import_expression -a` for a REPL that supports both import expressions and top level `await` (3.8+).
 
-See `import_expression --help` for more details. 
+See `import_expression --help` for more details.
 
 ## Limitations / Known Issues
 

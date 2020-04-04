@@ -27,6 +27,7 @@ import io
 import re
 import string
 import tokenize as tokenize_
+import typing
 from token import *
 # TODO only import what we need
 vars().update({k: v for k, v in vars(tokenize_).items() if not k.startswith('_')})
@@ -39,7 +40,7 @@ is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string ==
 
 NEWLINES = {NEWLINE, tokenize_.NL}
 
-def fix_syntax(s: str, filename=DEFAULT_FILENAME) -> bytes:
+def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 	try:
 		tokens = list(tokenize(s))
 	except tokenize_.TokenError as ex:
@@ -123,5 +124,10 @@ class Untokenizer:
 
 		return "".join(self.tokens)
 
-def tokenize(string):
-	return tokenize_.tokenize(io.BytesIO(string.encode('utf-8')).readline)
+def tokenize(string: typing.AnyStr):
+	if isinstance(string, bytes):
+		# call the internal tokenize func to avoid sniffing the encoding
+		# if it tried to sniff the encoding of a "# encoding: import_expression" file,
+		# it would call our code again, resulting in a RecursionError.
+		return tokenize_._tokenize(io.BytesIO(string).readline, encoding='utf-8')
+	return tokenize_.generate_tokens(io.StringIO(string).readline)

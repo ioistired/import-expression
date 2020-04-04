@@ -20,14 +20,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import distutils
 import importlib.util
 import logging
 import os
 import os.path
 import setuptools
 import subprocess
+import shutil
 import sys
 import typing
+from setuptools.command.install import install as _install
 
 logging.basicConfig(level=logging.INFO)
 here = os.path.realpath(os.path.dirname(__file__))
@@ -105,6 +108,37 @@ class ReleaseCommand(
 ):
 	pass
 
+# `class install` is modified from future_fstrings/setup.py at 596deb0
+
+class install(_install):
+	def initialize_options(self):
+		super().initialize_options()
+
+		contents = 'import import_expression._codec.register'
+		self.extra_path = (self.distribution.metadata.name, contents)
+
+	def finalize_options(self):
+		super().finalize_options()
+
+		install_suffix = os.path.relpath(
+			self.install_lib, self.install_libbase,
+		)
+		if install_suffix == '.':
+			distutils.log.info('skipping install of .pth during easy-install')
+		elif install_suffix == self.extra_path[1]:
+			self.install_lib = self.install_libbase
+			distutils.log.info(
+				"will install .pth to '%s.pth'",
+				os.path.join(self.install_lib, self.extra_path[0]),
+			)
+		else:
+			raise AssertionError(
+				'unexpected install_suffix',
+				self.install_lib, self.install_libbase, install_suffix,
+			)
+
+command_classes['install'] = install
+
 setuptools.setup(
 	name='import_expression',
 	version=version,
@@ -115,13 +149,16 @@ setuptools.setup(
 
 	license='MIT',
 
-	author='Io Mintz',
+	author='io mintz',
 	author_email='io@mintz.cc',
 	url='https://github.com/iomintz/import-expression-parser',
 
 	packages=['import_expression'],
 
 	extras_require={
+		'codec': [
+			'astunparse>=1.6.3,<2.0.0',
+		],
 		'test': [
 			'pytest',
 			'pytest-cov',

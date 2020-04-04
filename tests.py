@@ -18,11 +18,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import contextlib
+import os
 import textwrap
 
 import py.test
 
 import import_expression as ie
+
+try:
+	import astunparse
+except ImportError:
+	HAVE_ASTUNPARSE = False
+else:
+	HAVE_ASTUNPARSE = True
+
 
 invalid_attribute_cases = (
 	# arrange this as if ! is binary 1, empty str is 0
@@ -270,3 +280,55 @@ def test_find_imports():
 	"""))) == {'a', 'a.b'}
 
 	assert ie.find_imports('urllib.parse!.quote', mode='eval') == ['urllib.parse']
+
+class remove(contextlib.AbstractContextManager):
+	def __init__(self, name):
+		self.name = name
+	def __enter__(self):
+		return self
+	def __exit__(self, *excinfo):
+		os.remove(self.name)
+
+def test_bytes():
+	import typing
+	assert ie.eval(b'typing!.TYPE_CHECKING') == typing.TYPE_CHECKING
+
+@py.test.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
+@py.test.mark.parametrize('encoding', ['import_expression', 'ie'])
+def test_encoding(encoding):
+	import import_expression._codec
+	import_expression._codec.register()
+
+	import tempfile
+	import typing
+	fn = tempfile.mktemp()
+	with remove(fn), open(fn, mode='w+', encoding=encoding) as f:
+		f.write('x = typing!.TYPE_CHECKING')
+		f.seek(0)
+		g = {}
+		exec(f.read(), g)
+		assert g['x'] == typing.TYPE_CHECKING
+		assert not f.read()
+
+		f.seek(0)
+		while f.readline():  # we must reach EOF eventually
+			pass
+
+@py.test.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
+@py.test.mark.parametrize('encoding', ['import_expression', 'ie'])
+def test_encoding_2(encoding):
+	import codecs
+	import typing
+	g = {}
+	exec(codecs.decode(b'x = typing!.TYPE_CHECKING', encoding=encoding), g)
+	assert g['x'] == typing.TYPE_CHECKING
+
+@py.test.mark.skipif(not HAVE_ASTUNPARSE, reason='no need to test built in encoding without the [codec] setup.py extra')
+def test_utf8_unaffected():
+	import tempfile
+	fn = tempfile.mktemp()
+	with remove(fn), open(fn, mode='w+', encoding='shift-jis') as f:
+		f.write('foo')
+		f.seek(0)
+		assert f.read() == 'foo'
+		assert not f.read()

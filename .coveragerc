@@ -3,3 +3,4 @@ omit =
 	import_expression/__main__.py
 	import_expression/version.py
 	import_expression/constants.py
+	import_expression/_codec/compat.py
