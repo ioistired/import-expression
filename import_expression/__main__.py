@@ -224,6 +224,7 @@ def parse_args():
 	parser.add_argument('-q', '--quiet', action='store_true', help='hide the intro banner and exit message')
 	parser.add_argument('-a', '--asyncio', action='store_true', help='use the asyncio REPL (python 3.8+)')
 	parser.add_argument('-V', '--version', action='version', version=version_info)
+	parser.add_argument('filename', metavar='module', help='run this module')
 
 	return parser.parse_args()
 
@@ -255,6 +256,12 @@ def main():
 		# which would be inconsistent with `python -m import_expression`.
 		sys.path.insert(0, cwd)
 
+	args = parse_args()
+	if args.filename:
+		with open(args.filename) as f:
+			import_expression.exec(f.read())
+		sys.exit(0)
+
 	repl_locals = {
 		key: globals()[key] for key in [
 			'__name__', '__package__',
@@ -265,7 +272,6 @@ def main():
 
 	setup_history_and_tab_completion(repl_locals)
 
-	args = parse_args()
 	interact_kwargs = dict(banner='' if args.quiet else None, exitmsg='' if args.quiet else None)
 
 	if args.asyncio:

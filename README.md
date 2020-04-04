@@ -66,6 +66,10 @@ Run `import-expression -a` for a REPL that supports both import expressions and 
 
 See `import-expression --help` for more details.
 
+### Running a file
+
+Run `import-expression <filename.py>`.
+
 ### File rewriter
 
 Run `import-expression-rewrite <file.py>` to rewrite a file containing import expressions to standard Python. \
