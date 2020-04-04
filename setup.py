@@ -153,7 +153,7 @@ setuptools.setup(
 	author_email='io@mintz.cc',
 	url='https://github.com/iomintz/import-expression-parser',
 
-	packages=['import_expression'],
+	packages=['import_expression', 'import_expression._codec'],
 
 	install_requires=[
 		'astunparse>=1.6.3,<2.0.0',
