@@ -27,7 +27,7 @@ class IncrementalDecoder(codecs.BufferedIncrementalDecoder):
 		else:
 			return '', 0
 
-class StreamReader(utf_8.StreamReader):
+class StreamReader(utf_8.StreamReader):  # pragma: no cover
 	"""decode is deferred to support better error messages"""
 	_stream = None
 	_decoded = False
