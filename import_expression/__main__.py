@@ -224,7 +224,7 @@ def parse_args():
 	parser.add_argument('-q', '--quiet', action='store_true', help='hide the intro banner and exit message')
 	parser.add_argument('-a', '--asyncio', action='store_true', help='use the asyncio REPL (python 3.8+)')
 	parser.add_argument('-V', '--version', action='version', version=version_info)
-	parser.add_argument('filename', metavar='module', help='run this module')
+	parser.add_argument('filename', metavar='module', help='run this module', nargs='?')
 
 	return parser.parse_args()
 
