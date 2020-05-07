@@ -50,8 +50,6 @@ for line in sys.stdin:
 
 ### Custom encoding
 
-First, install `import_expression[codec]`.
-
 ```py
 # encoding: import_expression
 print(typing!.TYPE_CHECKING)
