@@ -114,7 +114,7 @@ class install(_install):
 	def initialize_options(self):
 		super().initialize_options()
 
-		contents = 'import import_expression._codec.register'
+		contents = 'import import_expression._codec._register'
 		self.extra_path = (self.distribution.metadata.name, contents)
 
 	def finalize_options(self):
