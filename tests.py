@@ -58,81 +58,77 @@ invalid_attribute_cases = (
 	'ab.b!c',
 )
 
-def test_valid_string_literals():
-	for invalid in invalid_attribute_cases:
-		valid = f'"{invalid}"'
-		print(valid)
-		ie.compile(valid)
+@py.test.mark.parametrize('valid', [f'"{invalid}"' for invalid in invalid_attribute_cases])
+def test_valid_string_literals(valid):
+	ie.compile(valid)
 
+@py.test.mark.parametrize('invalid', invalid_attribute_cases)
 def test_invalid_attribute_syntax():
-	for invalid in invalid_attribute_cases:
-		print(invalid)  # in case it raises and we want to see what failed
-		with py.test.raises(SyntaxError):
-			ie.compile(invalid)
+	with py.test.raises(SyntaxError):
+		ie.compile(invalid)
 
 def test_import_op_as_attr_name():
 	with py.test.raises(SyntaxError):
 		ie.compile('a.!.b')
 
-def test_del_store_import():
-	for test in (
-		'a!.b',
-		'a.b.c!.d',
-	):
-		del_ = f'del {test}'
-		store = f'{test} = 1'
+del_store_import_tests = []
+for test in (
+	'a!.b',
+	'a.b.c!.d',
+):
+	del_store_import_tests.append(f'del {test}')
+	del_store_import_tests.append(f'{test} = 1')
 
-		for test in del_, store:
-			print(test)
-			ie.compile(test)
+def test_del_store_import('test', del_store_import_tests):
+	ie.compile(test)
 
-def test_invalid_del_store_import():
-	for test in (
-		'a!',
-		'a.b!',
-	):
-		del_ = f'del {test}'
-		store = f'{test} = 1'
-		for test in del_, store:
-			print(test)
-			# we use Exception instead of SyntaxError because this error may be caught
-			# by builtins.compile (raises ValueError) or ie.parse (raises SyntaxError)
-			with py.test.raises(Exception):
-				ie.compile(test)
+invalid_del_store_import_tests = []
+for test in (
+	'a!',
+	'a.b!',
+):
+	invalid_del_store_import_tests.append(f'del {test}')
+	invalid_del_store_import_tests.append(f'{test} = 1')
+
+@py.test.mark.parametrize('test', invalid_del_store_import_tests)
+def test_invalid_del_store_import(test):
+	with py.test.raises((
+		ValueError,  # raised by builtins.compile
+		SyntaxError,  # ie.parse
+	)):
+		ie.compile(test)
 
 def test_lone_import_op():
 	with py.test.raises(SyntaxError):
 		ie.compile('!')
 
+@py.test.mark.parametrize('stmt', (
+	'def foo(x!): pass',
+	'def foo(*x!): pass',
+	'def foo(**y!): pass',
+	'def foo(*, z!): pass',
+	# note space around equals sign:
+	# class Y(Z!=1) is valid if Z.__ne__ returns a class
+	'class Y(Z! = 1): pass',
+))
 def test_invalid_argument_syntax():
-	for invalid in (
-		'def foo(x!): pass',
-		'def foo(*x!): pass',
-		'def foo(**y!): pass',
-		'def foo(*, z!): pass',
-		# note space around equals sign:
-		# class Y(Z!=1) is valid if Z.__ne__ returns a class
-		'class Y(Z! = 1): pass',
-	):
-		with py.test.raises(SyntaxError):
-			print(invalid)
-			ie.compile(invalid)
+	with py.test.raises(SyntaxError):
+		ie.compile(invalid)
 
-def test_invalid_def_syntax():
-	for invalid in (
-		'def !foo(y): pass',
-		'def fo!o(y): pass',
-		'def foo!(y): pass',
-		'class X!: pass',
-		'class Fo!o: pass'
-		'class !Foo: pass',
-		# note space around equals sign:
-		# class Y(Z!=1) is valid if Z.__ne__ returns a class
-		'class Y(Z! = 1): pass',
-	):
-		with py.test.raises(SyntaxError):
-			print(invalid)
-			ie.compile(invalid)
+@py.test.mark.parametrize('stmt', (
+	'def !foo(y): pass',
+	'def fo!o(y): pass',
+	'def foo!(y): pass',
+	'class X!: pass',
+	'class Fo!o: pass'
+	'class !Foo: pass',
+	# note space around equals sign:
+	# class Y(Z!=1) is valid if Z.__ne__ returns a class
+	'class Y(Z! = 1): pass',
+))
+def test_invalid_def_syntax(stmt):
+	with py.test.raises(SyntaxError):
+		ie.compile(invalid)
 
 def test_del_store_attribute():
 	class AttributeBox:
@@ -154,35 +150,32 @@ def test_kwargs():
 	import collections
 	assert ie.eval('dict(x=collections!)')['x'] is collections
 
-def test_typehint_conversion():
+@py.test.mark.parametrize(('stmt', 'annotation_var'), (
+	('def foo() -> typing!.Any: pass', 'return')
+	('def bar(x: typing!.Any): pass', 'x'),
+	('def baz(x: typing!.Any = 1): pass', 'x'),
+))
+def test_typehint_conversion(stmt, annotation_var):
 	from typing import Any
-
 	g = {}
-	ie.exec('def foo() -> typing!.Any: pass', g)
-	assert g['foo'].__annotations__['return'] is Any
-
-	ie.exec('def bar(x: typing!.Any): pass', g)
-	assert g['bar'].__annotations__['x'] is Any
-
-	ie.exec('def baz(x: typing!.Any = 1): pass', g)
-	assert g['baz'].__annotations__['x'] is Any
+	ie.exec(stmt, g)
+	assert g['foo'].__annotations__[annotation_var] is Any
 
 def test_comments():
 	ie.exec('# a')
 
-def test_import_statement():
-	for invalid in (
-		'import x!',
-		'import x.y!',
-		'import x!.y!',
-		'from x!.y import z',
-		'from x.y import z!',
-		'from w.x import y as z!',
-		'from w.x import y as z, a as b!',
-	):
-		print(invalid)
-		with py.test.raises(SyntaxError):
-			ie.compile(invalid, mode='exec')
+@py.test.mark.parametrize('stmt', (
+	'import x!',
+	'import x.y!',
+	'import x!.y!',
+	'from x!.y import z',
+	'from x.y import z!',
+	'from w.x import y as z!',
+	'from w.x import y as z, a as b!',
+))
+def test_import_statement(stmt):
+	with py.test.raises(SyntaxError):
+		ie.compile(invalid, mode='exec')
 
 def test_eval_exec():
 	import ipaddress
@@ -243,11 +236,11 @@ def test_exec_code_object():
 	ie.exec(code, globals=g)
 	assert g['foo']() is collections.Counter
 
-def test_normal_invalid_syntax():
+@py.test.mark.parametrize('invalid', (')', '"'))
+def test_normal_invalid_syntax(invalid):
 	"""ensure regular syntax errors are still caught"""
 	with py.test.raises(SyntaxError):
-		ie.compile(')')
-		ie.compile("'")
+		ie.compile(invalid)
 
 def test_dont_imply_dedent():
 	from codeop import PyCF_DONT_IMPLY_DEDENT
@@ -259,6 +252,7 @@ def test_parse_ast():
 	node = ie.parse(ie.parse('typing!.Any', mode='eval'))
 	assert ie.eval(node) is Any
 
+@py.test.mark.parametrize('stmt')
 def test_locals_arg():
 	ie.exec('assert locals() is globals()', {})
 	ie.exec('assert locals() is not globals()', {}, {})
