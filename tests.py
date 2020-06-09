@@ -63,7 +63,7 @@ def test_valid_string_literals(valid):
 	ie.compile(valid)
 
 @py.test.mark.parametrize('invalid', invalid_attribute_cases)
-def test_invalid_attribute_syntax():
+def test_invalid_attribute_syntax(invalid):
 	with py.test.raises(SyntaxError):
 		ie.compile(invalid)
 
@@ -79,7 +79,8 @@ for test in (
 	del_store_import_tests.append(f'del {test}')
 	del_store_import_tests.append(f'{test} = 1')
 
-def test_del_store_import('test', del_store_import_tests):
+@py.test.mark.parametrize('test', del_store_import_tests)
+def test_del_store_import(test):
 	ie.compile(test)
 
 invalid_del_store_import_tests = []
@@ -102,7 +103,7 @@ def test_lone_import_op():
 	with py.test.raises(SyntaxError):
 		ie.compile('!')
 
-@py.test.mark.parametrize('stmt', (
+@py.test.mark.parametrize('invalid', (
 	'def foo(x!): pass',
 	'def foo(*x!): pass',
 	'def foo(**y!): pass',
@@ -111,11 +112,11 @@ def test_lone_import_op():
 	# class Y(Z!=1) is valid if Z.__ne__ returns a class
 	'class Y(Z! = 1): pass',
 ))
-def test_invalid_argument_syntax():
+def test_invalid_argument_syntax(invalid):
 	with py.test.raises(SyntaxError):
 		ie.compile(invalid)
 
-@py.test.mark.parametrize('stmt', (
+@py.test.mark.parametrize('invalid', (
 	'def !foo(y): pass',
 	'def fo!o(y): pass',
 	'def foo!(y): pass',
@@ -126,7 +127,7 @@ def test_invalid_argument_syntax():
 	# class Y(Z!=1) is valid if Z.__ne__ returns a class
 	'class Y(Z! = 1): pass',
 ))
-def test_invalid_def_syntax(stmt):
+def test_invalid_def_syntax(invalid):
 	with py.test.raises(SyntaxError):
 		ie.compile(invalid)
 
@@ -151,9 +152,9 @@ def test_kwargs():
 	assert ie.eval('dict(x=collections!)')['x'] is collections
 
 @py.test.mark.parametrize(('stmt', 'annotation_var'), (
-	('def foo() -> typing!.Any: pass', 'return')
-	('def bar(x: typing!.Any): pass', 'x'),
-	('def baz(x: typing!.Any = 1): pass', 'x'),
+	('def foo() -> typing!.Any: pass', 'return'),
+	('def foo(x: typing!.Any): pass', 'x'),
+	('def foo(x: typing!.Any = 1): pass', 'x'),
 ))
 def test_typehint_conversion(stmt, annotation_var):
 	from typing import Any
@@ -164,7 +165,7 @@ def test_typehint_conversion(stmt, annotation_var):
 def test_comments():
 	ie.exec('# a')
 
-@py.test.mark.parametrize('stmt', (
+@py.test.mark.parametrize('invalid', (
 	'import x!',
 	'import x.y!',
 	'import x!.y!',
@@ -173,7 +174,7 @@ def test_comments():
 	'from w.x import y as z!',
 	'from w.x import y as z, a as b!',
 ))
-def test_import_statement(stmt):
+def test_import_statement(invalid):
 	with py.test.raises(SyntaxError):
 		ie.compile(invalid, mode='exec')
 
@@ -252,7 +253,6 @@ def test_parse_ast():
 	node = ie.parse(ie.parse('typing!.Any', mode='eval'))
 	assert ie.eval(node) is Any
 
-@py.test.mark.parametrize('stmt')
 def test_locals_arg():
 	ie.exec('assert locals() is globals()', {})
 	ie.exec('assert locals() is not globals()', {}, {})
