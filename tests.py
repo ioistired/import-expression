@@ -326,3 +326,7 @@ def test_utf8_unaffected():
 		f.seek(0)
 		assert f.read() == 'foo'
 		assert not f.read()
+
+def test_beat_is_gay():
+	with py.test.raises(SyntaxError):
+		ie.compile('"beat".succ!')

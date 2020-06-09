@@ -194,7 +194,7 @@ class Transformer(ast.NodeTransformer):
 		return False
 
 	def _call_on_name_or_attribute(func):
-		def checker(node):
+		def checker(self, node):
 			if type(node) is ast.Attribute:
 				to_check = node.attr
 			elif type(node) is ast.Name:
@@ -203,7 +203,7 @@ class Transformer(ast.NodeTransformer):
 				raise self._syntax_error('invalid syntax', node)
 			return func(to_check)
 
-		return staticmethod(checker)
+		return checker
 
 	_find_valid_imported_name = _call_on_name_or_attribute(find_valid_imported_name)
 	_remove_import_op = _call_on_name_or_attribute(remove_import_op)
