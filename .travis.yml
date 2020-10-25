@@ -1,12 +1,16 @@
-dist: bionic
-language: python
-python:
-  - 3.6
-  - 3.7
-  - 3.8
-script:
-  - pip install coveralls pytest pytest-cov
-  - ./setup.py test
-after_script:
-  - if [[ "$TRAVIS_PYTHON_VERSION" == 3.6* ]]; then coveralls; fi
-
+{
+    "dist": "bionic",
+    "language": "python",
+    "python": [
+        3.6,
+        3.7,
+        3.8
+    ],
+    "script": [
+        "pip install coveralls pytest pytest-cov",
+        "./setup.py test"
+    ],
+    "after_script": [
+        "if [[ \"$TRAVIS_PYTHON_VERSION\" == 3.6* ]]; then coveralls; fi"
+    ]
+}
