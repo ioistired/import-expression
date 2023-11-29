@@ -1,1 +1,2 @@
 include import_expression.pth
+include tests.py
