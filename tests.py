@@ -22,7 +22,7 @@ import contextlib
 import os
 import textwrap
 
-import py.test
+import pytest
 
 import import_expression as ie
 
@@ -58,17 +58,17 @@ invalid_attribute_cases = (
 	'ab.b!c',
 )
 
-@py.test.mark.parametrize('valid', [f'"{invalid}"' for invalid in invalid_attribute_cases])
+@pytest.mark.parametrize('valid', [f'"{invalid}"' for invalid in invalid_attribute_cases])
 def test_valid_string_literals(valid):
 	ie.compile(valid)
 
-@py.test.mark.parametrize('invalid', invalid_attribute_cases)
+@pytest.mark.parametrize('invalid', invalid_attribute_cases)
 def test_invalid_attribute_syntax(invalid):
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile(invalid)
 
 def test_import_op_as_attr_name():
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile('a.!.b')
 
 del_store_import_tests = []
@@ -79,7 +79,7 @@ for test in (
 	del_store_import_tests.append(f'del {test}')
 	del_store_import_tests.append(f'{test} = 1')
 
-@py.test.mark.parametrize('test', del_store_import_tests)
+@pytest.mark.parametrize('test', del_store_import_tests)
 def test_del_store_import(test):
 	ie.compile(test)
 
@@ -91,19 +91,19 @@ for test in (
 	invalid_del_store_import_tests.append(f'del {test}')
 	invalid_del_store_import_tests.append(f'{test} = 1')
 
-@py.test.mark.parametrize('test', invalid_del_store_import_tests)
+@pytest.mark.parametrize('test', invalid_del_store_import_tests)
 def test_invalid_del_store_import(test):
-	with py.test.raises((
+	with pytest.raises((
 		ValueError,  # raised by builtins.compile
 		SyntaxError,  # ie.parse
 	)):
 		ie.compile(test)
 
 def test_lone_import_op():
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile('!')
 
-@py.test.mark.parametrize('invalid', (
+@pytest.mark.parametrize('invalid', (
 	'def foo(x!): pass',
 	'def foo(*x!): pass',
 	'def foo(**y!): pass',
@@ -113,10 +113,10 @@ def test_lone_import_op():
 	'class Y(Z! = 1): pass',
 ))
 def test_invalid_argument_syntax(invalid):
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile(invalid)
 
-@py.test.mark.parametrize('invalid', (
+@pytest.mark.parametrize('invalid', (
 	'def !foo(y): pass',
 	'def fo!o(y): pass',
 	'def foo!(y): pass',
@@ -128,7 +128,7 @@ def test_invalid_argument_syntax(invalid):
 	'class Y(Z! = 1): pass',
 ))
 def test_invalid_def_syntax(invalid):
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile(invalid)
 
 def test_del_store_attribute():
@@ -151,7 +151,7 @@ def test_kwargs():
 	import collections
 	assert ie.eval('dict(x=collections!)')['x'] is collections
 
-@py.test.mark.parametrize(('stmt', 'annotation_var'), (
+@pytest.mark.parametrize(('stmt', 'annotation_var'), (
 	('def foo() -> typing!.Any: pass', 'return'),
 	('def foo(x: typing!.Any): pass', 'x'),
 	('def foo(x: typing!.Any = 1): pass', 'x'),
@@ -165,7 +165,7 @@ def test_typehint_conversion(stmt, annotation_var):
 def test_comments():
 	ie.exec('# a')
 
-@py.test.mark.parametrize('invalid', (
+@pytest.mark.parametrize('invalid', (
 	'import x!',
 	'import x.y!',
 	'import x!.y!',
@@ -175,7 +175,7 @@ def test_comments():
 	'from w.x import y as z, a as b!',
 ))
 def test_import_statement(invalid):
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile(invalid, mode='exec')
 
 def test_eval_exec():
@@ -237,15 +237,15 @@ def test_exec_code_object():
 	ie.exec(code, globals=g)
 	assert g['foo']() is collections.Counter
 
-@py.test.mark.parametrize('invalid', (')', '"'))
+@pytest.mark.parametrize('invalid', (')', '"'))
 def test_normal_invalid_syntax(invalid):
 	"""ensure regular syntax errors are still caught"""
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile(invalid)
 
 def test_dont_imply_dedent():
 	from codeop import PyCF_DONT_IMPLY_DEDENT
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile('def foo():\n\tpass', mode='single', flags=PyCF_DONT_IMPLY_DEDENT)
 
 def test_parse_ast():
@@ -264,7 +264,7 @@ def test_update_globals():
 	assert eval(code, g) is collections.Counter
 
 def test_find_imports():
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.find_imports('x; y', mode='eval')
 
 	assert set(ie.find_imports(textwrap.dedent("""
@@ -287,8 +287,8 @@ def test_bytes():
 	import typing
 	assert ie.eval(b'typing!.TYPE_CHECKING') == typing.TYPE_CHECKING
 
-@py.test.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
-@py.test.mark.parametrize('encoding', ['import_expression', 'ie'])
+@pytest.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
+@pytest.mark.parametrize('encoding', ['import_expression', 'ie'])
 def test_encoding(encoding):
 	import import_expression._codec
 	import_expression._codec.register()
@@ -308,8 +308,8 @@ def test_encoding(encoding):
 		while f.readline():  # we must reach EOF eventually
 			pass
 
-@py.test.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
-@py.test.mark.parametrize('encoding', ['import_expression', 'ie'])
+@pytest.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
+@pytest.mark.parametrize('encoding', ['import_expression', 'ie'])
 def test_encoding_2(encoding):
 	import codecs
 	import typing
@@ -317,7 +317,7 @@ def test_encoding_2(encoding):
 	exec(codecs.decode(b'x = typing!.TYPE_CHECKING', encoding=encoding), g)
 	assert g['x'] == typing.TYPE_CHECKING
 
-@py.test.mark.skipif(not HAVE_ASTUNPARSE, reason='no need to test built in encoding without the [codec] setup.py extra')
+@pytest.mark.skipif(not HAVE_ASTUNPARSE, reason='no need to test built in encoding without the [codec] setup.py extra')
 def test_utf8_unaffected():
 	import tempfile
 	fn = tempfile.mktemp()
@@ -328,5 +328,5 @@ def test_utf8_unaffected():
 		assert not f.read()
 
 def test_beat_is_gay():
-	with py.test.raises(SyntaxError):
+	with pytest.raises(SyntaxError):
 		ie.compile('"beat".succ!')
