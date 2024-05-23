@@ -40,7 +40,7 @@ import threading
 import types
 import warnings
 from asyncio import futures
-from codeop import PyCF_DONT_IMPLY_DEDENT
+from codeop import PyCF_DONT_IMPLY_DEDENT, PyCF_ALLOW_INCOMPLETE_INPUT
 
 import import_expression
 from import_expression import constants
@@ -73,14 +73,19 @@ class ImportExpressionCompile:
 	statement, it "remembers" and compiles all subsequent program texts
 	with the statement in force."""
 	def __init__(self):
-		self.flags = PyCF_DONT_IMPLY_DEDENT
+		self.flags = PyCF_DONT_IMPLY_DEDENT | PyCF_ALLOW_INCOMPLETE_INPUT
 
-	def __call__(self, source, filename, symbol):
-		codeob = import_expression.compile(source, filename, symbol, self.flags, dont_inherit=True)
+	def __call__(self, source, filename, symbol, **kwargs):
+		flags = self.flags
+		if kwargs.get('incomplete_input', True) is False:
+			flags &= ~PyCF_DONT_IMPLY_DEDENT
+			flags &= ~PyCF_ALLOW_INCOMPLETE_INPUT
+		codeob = import_expression.compile(source, filename, symbol, flags, True)
 		for feature in features:
 			if codeob.co_flags & feature.compiler_flag:
 				self.flags |= feature.compiler_flag
 		return codeob
+
 
 class ImportExpressionInteractiveConsole(code.InteractiveConsole):
 	def __init__(self, locals=None, filename='<console>'):
