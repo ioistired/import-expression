@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright © 2018–2019 Io Mintz <io@mintz.cc>
+# Copyright © io mintz <io@mintz.cc>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the “Software”),
@@ -151,7 +151,7 @@ setuptools.setup(
 
 	author='io mintz',
 	author_email='io@mintz.cc',
-	url='https://github.com/iomintz/import-expression-parser',
+	url='https://github.com/ioistired/import-expression',
 
 	packages=['import_expression', 'import_expression._codec'],
 

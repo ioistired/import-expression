@@ -1,7 +1,6 @@
 # Import Expression Parser (for lack of a better name)
 
-[![Build Status](https://img.shields.io/travis/iomintz/import-expression-parser/main.svg?label=tests)](https://travis-ci.org/iomintz/import-expression-parser)
-[![Coverage Status](https://coveralls.io/repos/github/iomintz/import-expression-parser/badge.svg?branch=main)](https://coveralls.io/github/iomintz/import-expression-parser?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/iomintz/import-expression-parser/badge.svg?branch=main)](https://coveralls.io/github/ioistired/import-expression-parser?branch=main)
 
 Import Expression Parser converts code like this:
 
@@ -81,7 +80,7 @@ Add the `-i` flag to rewrite in-place.
   without an explicit `globals` argument.
 * Unlike real operators, spaces before and after the import expression operator (such as `x ! .y`) are not supported.
 
-## [License](https://github.com/iomintz/import-expression-parser/blob/main/LICENSE)
+## [License](https://github.com/ioistired/import-expression/blob/main/LICENSE)
 
-Copyright © 2018–2019 Io Mintz <<io@mintz.cc>>. All Rights Reserved. \
+Copyright © io mintz <<io@mintz.cc>>. All Rights Reserved. \
 Licensed under the MIT License. See the LICENSE file for details.
