@@ -29,14 +29,13 @@ from codeop import PyCF_DONT_IMPLY_DEDENT
 
 from . import constants
 from ._syntax import fix_syntax as _fix_syntax
-from ._parser import parse_ast as _parse_ast
-from ._parser import find_imports as _find_imports
+from ._parser import transform_ast as _transform_ast
 from .version import __version__
 
 with _contextlib.suppress(NameError):
 	del version
 
-__all__ = ('compile', 'parse', 'eval', 'exec', 'constants', 'find_imports', 'update_globals')
+__all__ = ('compile', 'parse', 'eval', 'exec', 'constants')
 
 _source = _typing.Union[_ast.AST, _typing.AnyStr]
 
@@ -57,14 +56,14 @@ def parse(source: _source, filename=constants.DEFAULT_FILENAME, mode='exec', *, 
 	"""
 	# for some API compatibility with ast, allow parse(parse('foo')) to work
 	if isinstance(source, _ast.AST):
-		return _parse_ast(source, filename=filename)
+		return _transform_ast(source, filename=filename)
 
 	fixed = _fix_syntax(source, filename=filename)
 	if flags & PyCF_DONT_IMPLY_DEDENT:
 		# just run it for the syntax errors, which codeop picks up on
 		_builtins.compile(fixed, filename, mode, flags)
 	tree = _ast.parse(fixed, filename, mode, **kwargs)
-	return _parse_ast(tree, source=source, filename=filename)
+	return _transform_ast(tree, source=source, filename=filename)
 
 def compile(
 	source: _source,
@@ -101,31 +100,9 @@ def exec(source: _code, globals=None, locals=None):
 		return _builtins.eval(source, globals, locals)
 	_builtins.eval(compile(source, constants.DEFAULT_FILENAME, 'exec'), globals, locals)
 
-def find_imports(source: str, filename=constants.DEFAULT_FILENAME, mode='exec'):
-	"""return a list of all module names required by the given source code."""
-	# passing an AST is not supported because it doesn't make sense to.
-	# either the AST is one that we made, in which case the imports have already been made and calling parse_ast again
-	# would find no imports, or it's an AST made by parsing the output of fix_syntax, which is internal.
-	fixed = _fix_syntax(source, filename=filename)
-	tree = _ast.parse(fixed, filename, mode)
-	return _find_imports(tree, filename=filename)
-
-def update_globals(globals: dict) -> dict:
-	"""Ensure that the variables required for eval/exec are present in the given dict.
-	Note that import_expression.eval and import_expression.exec do this for you automatically.
-	Calling this function yourself is only necessary if you want to call builtins.eval or builtins.exec
-	with the return value of import_expression.compile.
-
-	This function always returns the passed dictionary to make expression chaining easier.
-	"""
-	globals.update({constants.IMPORTER: _importlib.import_module})
-	return globals
-
 def _parse_eval_exec_args(globals, locals):
 	if globals is None:
 		globals = {}
-
-	update_globals(globals)
 
 	if locals is None:
 		locals = globals

@@ -21,7 +21,7 @@ importlib.import_module('urllib.parse').quote('hello there')
 Counter({'e': 4, 'd': 3, 'c': 2, 'b': 1})
 ```
 
-The other public functions are `exec`, `compile`, `parse`, `find_imports`, and `update_globals`.
+The other public functions are `exec`, `compile`, and `parse`.
 See their docstrings for details.
 
 By default, the filename for `SyntaxError`s is `<string>`.
@@ -47,15 +47,6 @@ for line in sys.stdin:
 	print(import_expression.eval(code, dict(l=line)))
 ```
 
-### Custom encoding
-
-```py
-# encoding: import_expression
-print(typing!.TYPE_CHECKING)
-```
-
-This file, when run, will print True/False. For maximum laziness you can also do `#coding:ie`.
-
 ### REPL usage
 
 Run `import-expression` for an import expression enabled REPL. \
@@ -66,11 +57,6 @@ See `import-expression --help` for more details.
 ### Running a file
 
 Run `import-expression <filename.py>`.
-
-### File rewriter
-
-Run `import-expression-rewrite <file.py>` to rewrite a file containing import expressions to standard Python. \
-Add the `-i` flag to rewrite in-place.
 
 ## Limitations / Known Issues
 

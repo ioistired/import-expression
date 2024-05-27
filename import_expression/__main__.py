@@ -90,7 +90,6 @@ class ImportExpressionCompile:
 class ImportExpressionInteractiveConsole(code.InteractiveConsole):
 	def __init__(self, locals=None, filename='<console>'):
 		super().__init__(locals, filename)
-		self.locals.update({constants.IMPORTER: importlib.import_module})
 		self.compile = ImportExpressionCommandCompiler()
 
 # we must vendor this class because it creates global variables that the main code depends on
