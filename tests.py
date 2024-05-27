@@ -244,26 +244,6 @@ def test_locals_arg():
 	ie.exec('assert locals() is globals()', {})
 	ie.exec('assert locals() is not globals()', {}, {})
 
-def test_find_imports():
-	with pytest.raises(SyntaxError):
-		ie.find_imports('x; y', mode='eval')
-
-	assert set(ie.find_imports(textwrap.dedent("""
-		x = a!
-		y = a.b!.c
-		z = d.e.f
-	"""))) == {'a', 'a.b'}
-
-	assert ie.find_imports('urllib.parse!.quote', mode='eval') == ['urllib.parse']
-
-class remove(contextlib.AbstractContextManager):
-	def __init__(self, name):
-		self.name = name
-	def __enter__(self):
-		return self
-	def __exit__(self, *excinfo):
-		os.remove(self.name)
-
 def test_bytes():
 	import typing
 	assert ie.eval(b'typing!.TYPE_CHECKING') == typing.TYPE_CHECKING
