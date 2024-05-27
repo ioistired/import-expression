@@ -108,37 +108,6 @@ class ReleaseCommand(
 ):
 	pass
 
-# `class install` is modified from future_fstrings/setup.py at 596deb0
-
-class install(_install):
-	def initialize_options(self):
-		super().initialize_options()
-
-		with open('import_expression.pth') as f:
-			self.extra_path = (self.distribution.metadata.name, f.read())
-
-	def finalize_options(self):
-		super().finalize_options()
-
-		install_suffix = os.path.relpath(
-			self.install_lib, self.install_libbase,
-		)
-		if install_suffix == '.':
-			distutils.log.info('skipping install of .pth during easy-install')
-		elif install_suffix == self.extra_path[1]:
-			self.install_lib = self.install_libbase
-			distutils.log.info(
-				"will install .pth to '%s.pth'",
-				os.path.join(self.install_lib, self.extra_path[0]),
-			)
-		else:
-			raise AssertionError(
-				'unexpected install_suffix',
-				self.install_lib, self.install_libbase, install_suffix,
-			)
-
-command_classes['install'] = install
-
 setuptools.setup(
 	name='import_expression',
 	version=version,
@@ -153,9 +122,11 @@ setuptools.setup(
 	author_email='io@mintz.cc',
 	url='https://github.com/ioistired/import-expression',
 
-	packages=['import_expression', 'import_expression._codec'],
+	packages=['import_expression'],
 
-	install_requires=[],
+	install_requires=[
+		'typing-extensions >= 4.3, < 5'
+	],
 
 	extras_require={
 		'test': [
