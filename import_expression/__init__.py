@@ -30,13 +30,12 @@ from codeop import PyCF_DONT_IMPLY_DEDENT
 from . import constants
 from ._syntax import fix_syntax as _fix_syntax
 from ._parser import transform_ast as _transform_ast
-from ._parser import find_imports as _find_imports
 from .version import __version__
 
 with _contextlib.suppress(NameError):
 	del version
 
-__all__ = ('compile', 'parse', 'eval', 'exec', 'constants', 'find_imports')
+__all__ = ('compile', 'parse', 'eval', 'exec', 'constants')
 
 _source = _typing.Union[_ast.AST, _typing.AnyStr]
 
@@ -100,15 +99,6 @@ def exec(source: _code, globals=None, locals=None):
 	if _inspect.iscode(source):
 		return _builtins.eval(source, globals, locals)
 	_builtins.eval(compile(source, constants.DEFAULT_FILENAME, 'exec'), globals, locals)
-
-def find_imports(source: str, filename=constants.DEFAULT_FILENAME, mode='exec'):
-	"""return a list of all module names required by the given source code."""
-	# passing an AST is not supported because it doesn't make sense to.
-	# either the AST is one that we made, in which case the imports have already been made and calling parse_ast again
-	# would find no imports, or it's an AST made by parsing the output of fix_syntax, which is internal.
-	fixed = _fix_syntax(source, filename=filename)
-	tree = _ast.parse(fixed, filename, mode)
-	return _find_imports(tree, filename=filename)
 
 def _parse_eval_exec_args(globals, locals):
 	if globals is None:

@@ -40,7 +40,7 @@ T = typing.TypeVar("T")
 
 def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 	try:
-		tokens = list(tokenize(s))
+		tokens, encoding = tokenize(s)
 	except tokenize_.TokenError as ex:
 		message, (lineno, offset) = ex.args
 
@@ -51,8 +51,9 @@ def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 
 		raise SyntaxError(message, (filename, lineno-1, offset, source_line)) from None
 
+	tokens = list(tokens)
 	transformed = transform_tokens(tokens)
-	return tokenize_.untokenize(tokens)
+	return tokenize_.untokenize(transformed).decode(encoding)
 
 def offset_token_horizontal(tok: tokenize_.TokenInfo, offset: int) -> tokenize_.TokenInfo:
 	"""Takes a token and returns a new token with the columns for start and end offset by a given amount."""
@@ -128,14 +129,14 @@ def transform_tokens(tokens: typing.Iterable[tokenize_.TokenInfo]) -> typing.Lis
 				tokenize_.TokenInfo(
 					tokenize_.OP,
 					"(",
-					(old_f_row, old_f_col + 17),
-					(old_f_row, old_f_col + 18),
+					(old_f_row, old_f_col + len(MARKER)),
+					(old_f_row, old_f_col + len(MARKER)+1),
 					old_first.line,
 				),
 			]
 
 			# Adjust the positions of the following tokens within the inline import expression.
-			new_tokens[last_place + 2:] = (offset_token_horizontal(tok, 18) for tok in new_tokens[last_place + 2:])
+			new_tokens[last_place + 2:] = (offset_token_horizontal(tok, len(MARKER)+1) for tok in new_tokens[last_place + 2:])
 
 			# Add a closing parenthesis.
 			(end_row, end_col) = new_tokens[-1].end
@@ -145,7 +146,7 @@ def transform_tokens(tokens: typing.Iterable[tokenize_.TokenInfo]) -> typing.Lis
 
 			# Fix the positions of the rest of the tokens on the same line.
 			fixed_line_tokens: typing.List[tokenize_.TokenInfo] = []
-			offset_line_horizontal(orig_tokens, orig_i, line=new_tokens[-1].start[0], offset=18)
+			offset_line_horizontal(orig_tokens, orig_i, line=new_tokens[-1].start[0], offset=len(MARKER)+1)
 
 			# Check the rest of the line for inline import expressions.
 			new_tokens.extend(transform_tokens(fixed_line_tokens))
@@ -174,4 +175,4 @@ def tokenize(source: typing.Union[str, ReadableBuffer]) -> str:
     stream = io.BytesIO(source)
     encoding, _ = tokenize_.detect_encoding(stream.readline)
     stream.seek(0)
-    return tokenize_.tokenize(stream.readline)
+    return tokenize_.tokenize(stream.readline), encoding
