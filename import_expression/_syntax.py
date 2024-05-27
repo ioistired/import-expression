@@ -22,23 +22,20 @@
 # It is used under the Python Software Foundation License Version 2.
 # See LICENSE for details.
 
-import collections
 import io
 import re
+import sys
 import string
-import tokenize as tokenize_
 import typing
+import collections
 from token import *
-# TODO only import what we need
-vars().update({k: v for k, v in vars(tokenize_).items() if not k.startswith('_')})
-
 from .constants import *
+import tokenize as tokenize_
+from typing_extensions import Buffer as ReadableBuffer
+from typing_extensions import ParamSpec
 
-tokenize_.TokenInfo.value = property(lambda self: self.string)
-
-is_import = lambda token: token.type == tokenize_.ERRORTOKEN and token.string == IMPORT_OP
-
-NEWLINES = {NEWLINE, tokenize_.NL}
+P = ParamSpec("P")
+T = typing.TypeVar("T")
 
 def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 	try:
@@ -53,81 +50,127 @@ def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 
 		raise SyntaxError(message, (filename, lineno-1, offset, source_line)) from None
 
-	return Untokenizer().untokenize(tokens)
+	transformed = transform_tokens(tokens)
+	return tokenize_.untokenize(tokens)
 
-# modified from Lib/tokenize.py at 3.6
-class Untokenizer:
-	def __init__(self):
-		self.tokens = collections.deque()
-		self.indents = collections.deque()
-		self.prev_row = 1
-		self.prev_col = 0
-		self.startline = False
-		self.encoding = None
+def offset_token_horizontal(tok: tokenize_.TokenInfo, offset: int) -> tokenize_.TokenInfo:
+	"""Takes a token and returns a new token with the columns for start and end offset by a given amount."""
 
-	def add_whitespace(self, start):
-		row, col = start
-		if row < self.prev_row or row == self.prev_row and col < self.prev_col:
-			raise ValueError(
-				"start ({},{}) precedes previous end ({},{})".format(row, col, self.prev_row, self.prev_col))
+	start_row, start_col = tok.start
+	end_row, end_col = tok.end
+	return tok._replace(start=(start_row, start_col + offset), end=(end_row, end_col + offset))
 
-		col_offset = col - self.prev_col
-		self.tokens.append(" " * col_offset)
+def offset_line_horizontal(
+	tokens: typing.List[tokenize_.TokenInfo],
+	start_index: int = 0,
+	*,
+	line: int,
+	offset: int,
+) -> None:
+	"""Takes a list of tokens and changes the offset of some of the tokens in place."""
 
-	def untokenize(self, iterable):
-		indents = []
-		startline = False
-		for token in iterable:
-			if token.type == tokenize_.ENCODING:
-				self.encoding = token.value
+	for i, tok in enumerate(tokens[start_index:], start=start_index):
+		if tok.start[0] != line:
+			break
+		tokens[i] = offset_token_horizontal(tok, offset)
+
+def transform_tokens(tokens: typing.Iterable[tokenize_.TokenInfo]) -> typing.List[tokenize_.TokenInfo]:
+	"""Find the inline import expressions in a list of tokens and replace the relevant tokens to wrap the imported
+	modules with a call to MARKER.
+
+	Later, the AST transformer step will replace those with valid import expressions.
+	"""
+
+	orig_tokens = list(tokens)
+	new_tokens: typing.List[tokenize_.TokenInfo] = []
+
+	for orig_i, tok in enumerate(orig_tokens):
+		# "!" is only an OP in >=3.12.
+		if tok.type in {tokenize_.OP, tokenize_.ERRORTOKEN} and tok.string == IMPORT_OP:
+			has_invalid_syntax = False
+
+			# Collect all name and attribute access-related tokens directly connected to the "!".
+			last_place = len(new_tokens)
+			looking_for_name = True
+
+			for old_tok in reversed(new_tokens):
+				if old_tok.exact_type != (tokenize_.NAME if looking_for_name else tokenize_.DOT):
+					# The "!" was placed somewhere in a class definition, e.g. "class Fo!o: pass".
+					has_invalid_syntax = (old_tok.exact_type == tokenize_.NAME and old_tok.string == "class")
+
+					# There's a name immediately following "!". Might be a f-string conversion flag
+					# like "f'{thing!r}'" or just something invalid like "def fo!o(): pass".
+					try:
+						peek = orig_tokens[orig_i + 1]
+					except IndexError:
+						pass
+					else:
+						has_invalid_syntax = (has_invalid_syntax or peek.type == tokenize_.NAME)
+
+					break
+
+				last_place -= 1
+				looking_for_name = not looking_for_name
+
+			# The "!" is just by itself or in a bad spot. Let it error later if it's wrong.
+			# Also allows other token transformers to work with it without erroring early.
+			if has_invalid_syntax or last_place == len(new_tokens):
+				new_tokens.append(tok)
 				continue
 
-			if token.type == tokenize_.ENDMARKER:
-				break
+			# Insert a call to the MARKER just before the inline import expression.
+			old_first = new_tokens[last_place]
+			old_f_row, old_f_col = old_first.start
 
-			# XXX this abomination comes from tokenize.py
-			# i tried to move it to a separate method but failed
+			new_tokens[last_place:last_place] = [
+				old_first._replace(type=tokenize_.NAME, string=MARKER, end=(old_f_row, old_f_col + len(MARKER))),
+				tokenize_.TokenInfo(
+					tokenize_.OP,
+					"(",
+					(old_f_row, old_f_col + 17),
+					(old_f_row, old_f_col + 18),
+					old_first.line,
+				),
+			]
 
-			if token.type == tokenize_.INDENT:
-				indents.append(token.value)
-				continue
-			elif token.type == tokenize_.DEDENT:
-				indents.pop()
-				self.prev_row, self.prev_col = token.end
-				continue
-			elif token.type in NEWLINES:
-				startline = True
-			elif startline and indents:
-				indent = indents[-1]
-				start_row, start_col = token.start
-				if start_col >= len(indent):
-					self.tokens.append(indent)
-					self.prev_col = len(indent)
-				startline = False
+			# Adjust the positions of the following tokens within the inline import expression.
+			new_tokens[last_place + 2:] = (offset_token_horizontal(tok, 18) for tok in new_tokens[last_place + 2:])
 
-			# end abomination
+			# Add a closing parenthesis.
+			(end_row, end_col) = new_tokens[-1].end
+			line = new_tokens[-1].line
+			end_paren_token = tokenize_.TokenInfo(tokenize_.OP, ")", (end_row, end_col), (end_row, end_col + 1), line)
+			new_tokens.append(end_paren_token)
 
-			self.add_whitespace(token.start)
+			# Fix the positions of the rest of the tokens on the same line.
+			fixed_line_tokens: typing.List[tokenize_.TokenInfo] = []
+			offset_line_horizontal(orig_tokens, orig_i, line=new_tokens[-1].start[0], offset=18)
 
-			if is_import(token):
-				self.tokens.append(MARKER)
-			else:
-				self.tokens.append(token.value)
+			# Check the rest of the line for inline import expressions.
+			new_tokens.extend(transform_tokens(fixed_line_tokens))
 
-			self.prev_row, self.prev_col = token.end
+		else:
+			new_tokens.append(tok)
 
-			# don't ask me why this shouldn't be "in NEWLINES",
-			# but ignoring tokenize_.NL here fixes #3
-			if token.type == NEWLINE:
-				self.prev_row += 1
-				self.prev_col = 0
+	# Hack to get around a bug where code that ends in a comment, but no newline, has an extra
+	# NEWLINE token added in randomly. This patch wasn't backported to 3.8.
+	# https://github.com/python/cpython/issues/79288
+	# https://github.com/python/cpython/issues/88833
+	if sys.version_info < (3, 9):
+		if len(new_tokens) >= 4 and (
+			new_tokens[-4].type == tokenize_.COMMENT
+			and new_tokens[-3].type == tokenize_.NL
+			and new_tokens[-2].type == tokenize_.NEWLINE
+			and new_tokens[-1].type == tokenize_.ENDMARKER
+		):
+			del new_tokens[-2]
 
-		return "".join(self.tokens)
+	return new_tokens
 
-def tokenize(string: typing.AnyStr):
-	if isinstance(string, bytes):
-		# call the internal tokenize func to avoid sniffing the encoding
-		# if it tried to sniff the encoding of a "# encoding: import_expression" file,
-		# it would call our code again, resulting in a RecursionError.
-		return tokenize_._tokenize(io.BytesIO(string).readline, encoding='utf-8')
-	return tokenize_.generate_tokens(io.StringIO(string).readline)
+def tokenize(source: typing.Union[str, ReadableBuffer]) -> str:
+    if isinstance(source, str):
+        source = source.encode('utf-8')
+    stream = io.BytesIO(source)
+    encoding, _ = tokenize_.detect_encoding(stream.readline)
+    stream.seek(0)
+    return tokenize_.tokenize(stream.readline)

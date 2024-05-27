@@ -155,9 +155,7 @@ setuptools.setup(
 
 	packages=['import_expression', 'import_expression._codec'],
 
-	install_requires=[
-		'astunparse>=1.6.3,<2.0.0',
-	],
+	install_requires=[],
 
 	extras_require={
 		'test': [

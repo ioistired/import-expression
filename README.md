@@ -21,7 +21,7 @@ importlib.import_module('urllib.parse').quote('hello there')
 Counter({'e': 4, 'd': 3, 'c': 2, 'b': 1})
 ```
 
-The other public functions are `exec`, `compile`, `parse`, `find_imports`, and `update_globals`.
+The other public functions are `exec`, `compile`, `parse`, `find_imports`.
 See their docstrings for details.
 
 By default, the filename for `SyntaxError`s is `<string>`.

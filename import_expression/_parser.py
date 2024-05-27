@@ -19,206 +19,103 @@
 # THE SOFTWARE.
 
 import ast
+import sys
+import typing
+import functools
 import contextlib
 from collections import namedtuple
-
+from typing_extensions import ParamSpec
+from typing_extensions import Buffer as ReadableBuffer
 from .constants import *
 
-def parse_ast(root_node, **kwargs): return ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
+P = ParamSpec("P")
+T = typing.TypeVar("T")
 
-def find_imports(root_node, **kwargs):
-	t = ListingTransformer(**kwargs)
-	t.visit(root_node)
-	return t.imports
+# https://github.com/python/cpython/blob/5d04cc50e51cb262ee189a6ef0e79f4b372d1583/Objects/exceptions.c#L2438-L2441
+_sec_fields = 'filename lineno offset text'.split()
+if sys.version_info >= (3, 10):
+	_sec_fields.extend('end_lineno end_offset'.split())
 
-def remove_string_right(haystack, needle):
-	left, needle, right = haystack.rpartition(needle)
-	if not right:
-		return left
-	# needle not found
-	return haystack
+SyntaxErrorContext = namedtuple('SyntaxErrorContext', _sec_fields)
 
-def remove_import_op(name): return remove_string_right(name, MARKER)
-def has_any_import_op(name): return MARKER in name
-def has_invalid_import_op(name):
-	removed = remove_import_op(name)
-	return MARKER in removed or not removed
-def find_valid_imported_name(name):
-	"""return a name preceding an import op, or False if there isn't one"""
-	return name.endswith(MARKER) and remove_import_op(name)
+del _sec_fields
 
-# source: CPython Objects/exceptions.c:1362 at v3.8.0
-SyntaxErrorContext = namedtuple('SyntaxErrorContext', 'filename lineno offset text')
+def transform_ast(root_node, **kwargs): return ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
 
 class Transformer(ast.NodeTransformer):
+	"""An AST transformer that replaces calls to MARKER with '__import__("importlib").import_module(...)'."""
+
 	def __init__(self, *, filename=None, source=None):
 		self.filename = filename
 		self.source_lines = source.splitlines() if source is not None else None
 
-	def visit_Attribute(self, node):
-		"""
-		convert Attribute nodes containing import expressions into Attribute nodes containing import calls
-		"""
-		self._ensure_only_valid_import_ops(node)
+	def _collapse_attributes(self, node: typing.Union[ast.Attribute, ast.Name]) -> str:
+		if isinstance(node, ast.Name):
+			return node.id
 
-		maybe_transformed = self._transform_attribute_attr(node)
-		if maybe_transformed:
-			return maybe_transformed
-		else:
-			transformed_lhs = self.visit(node.value)
-			return ast.copy_location(
-				ast.Attribute(
-					value=transformed_lhs,
-					ctx=node.ctx,
-					attr=node.attr),
-				node)
-
-	def visit_Name(self, node):
-		"""convert solitary Names that have import expressions, such as "a!", into import calls"""
-		self._ensure_only_valid_import_ops(node)
-
-		id = find_valid_imported_name(node.id)
-		if id:
-			return ast.copy_location(self.import_call(id, node.ctx), node)
-		return node
-
-	@staticmethod
-	def import_call(attribute_source, ctx):
-		return ast.Call(
-			func=ast.Name(id=IMPORTER, ctx=ctx),
-			args=[ast.Str(attribute_source)],
-			keywords=[])
-
-	def _transform_attribute_attr(self, node):
-		"""convert an Attribute node's left hand side into an import call"""
-
-		attr = find_valid_imported_name(node.attr)
-		if not attr:
-			return None
-
-		node.attr = attr
-		as_source = self.attribute_source(node)
-
-		return ast.copy_location(
-			self.import_call(as_source, node.ctx),
-			node)
-
-	def attribute_source(self, node: ast.Attribute, _seen_import_op=False):
-		"""return a source-code representation of an Attribute node"""
-		if self._find_valid_imported_name(node):
-			_seen_import_op = True
-
-		stripped = self._remove_import_op(node)
-		if type(node) is ast.Name:
-			if _seen_import_op:
-				raise self._syntax_error('multiple import expressions not allowed', node) from None
-			return stripped
-
-		lhs = self.attribute_source(node.value, _seen_import_op)
-		rhs = stripped
-
-		return lhs + '.' + rhs
-
-	def visit_def_(self, node):
-		if not has_any_import_op(node.name):
-			# it's valid so far, just ensure that arguments and body are also visited
-			return self.generic_visit(node)
-
-		if isinstance(node, ast.ClassDef):
-			type_name = 'class'
-		else:
-			type_name = 'function'
-
-		raise self._syntax_error(
-			f'"{IMPORT_OP}" not allowed in the name of a {type_name}',
-			node
-		) from None
-
-	visit_FunctionDef = visit_def_
-	visit_ClassDef = visit_def_
-
-	def visit_arg(self, node):
-		"""ensure foo(x! = 1) or def foo(x!) does not occur"""
-		if node.arg is not None and has_any_import_op(node.arg):
+		if not (
+			isinstance(node, ast.Attribute)	 # pyright: ignore[reportUnnecessaryIsInstance]
+			and isinstance(node.value, (ast.Attribute, ast.Name))
+		):
 			raise self._syntax_error(
-				f'"{IMPORT_OP}" not allowed in function arguments',
-				node
-			) from None
+				"Only names and attribute access (dot operator) "
+				"can be within the inline import expression.",
+				node,
+			)	# noqa: TRY004
 
-		# regular arguments may have import expr annotations as children
-		return super().generic_visit(node)
+		return self._collapse_attributes(node.value) + f".{node.attr}"
 
-	def visit_keyword(self, node):
-		self.visit_arg(node)
-		# keyword arguments may have import expressions as children
-		return super().generic_visit(node)
+	def visit_Call(self, node: ast.Call) -> ast.AST:
+		"""Replace the import calls with a valid inline import expression."""
 
-	def visit_alias(self, node):
-		# from x import y **as z**
-		self._ensure_no_import_ops(node)
-		return node
+		if (
+			isinstance(node.func, ast.Name)
+			and node.func.id == MARKER
+			and len(node.args) == 1
+			and isinstance(node.args[0], (ast.Attribute, ast.Name))
+		):
+			node.func = ast.Attribute(
+				value=ast.Call(
+					func=ast.Name(id="__import__", ctx=ast.Load()),
+					args=[ast.Constant(value="importlib")],
+					keywords=[],
+				),
+				attr="import_module",
+				ctx=ast.Load(),
+			)
+			node.args[0] = ast.Constant(value=self._collapse_attributes(node.args[0]))
 
-	def visit_ImportFrom(self, node):
-		self._ensure_no_import_ops(node)
-		# ImportFrom nodes can have alias children that we also need to check
-		return super().generic_visit(node)
-
-	def _ensure_only_valid_import_ops(self, node):
-		if self._for_any_child_node_string(has_invalid_import_op, node):
-			raise self._syntax_error(
-				f'"{IMPORT_OP}" only allowed at end of attribute name',
-				node
-			) from None
-
-	def _ensure_no_import_ops(self, node):
-		if self._for_any_child_node_string(has_any_import_op, node):
-			raise self._syntax_error(
-				'import expressions are only allowed in variables and attributes',
-				node
-			) from None
-
-	@classmethod
-	def _for_any_child_node_string(cls, predicate, node):
-		for child_node in ast.walk(node):
-			if cls._for_any_node_string(predicate, node):
-				return True
-
-		return False
-
-	@staticmethod
-	def _for_any_node_string(predicate, node):
-		for field, value in ast.iter_fields(node):
-			if isinstance(value, str) and predicate(value):
-				return True
-
-		return False
-
-	def _call_on_name_or_attribute(func):
-		def checker(self, node):
-			if type(node) is ast.Attribute:
-				to_check = node.attr
-			elif type(node) is ast.Name:
-				to_check = node.id
-			else:
-				raise self._syntax_error('invalid syntax', node)
-			return func(to_check)
-
-		return checker
-
-	_find_valid_imported_name = _call_on_name_or_attribute(find_valid_imported_name)
-	_remove_import_op = _call_on_name_or_attribute(remove_import_op)
-
-	del _call_on_name_or_attribute
+		return self.generic_visit(node)
 
 	def _syntax_error(self, message, node):
 		lineno = getattr(node, 'lineno', None)
 		offset = getattr(node, 'col_offset', None)
-		line = None
+		end_lineno = getattr(node, 'end_lineno', None)
+		end_offset = getattr(node, 'end_offset', None)
+
+		text = None
 		if self.source_lines is not None and lineno:
+			if end_offset is None:
+				sl = lineno-1
+			else:
+				sl = slice(lineno-1, end_lineno-1)
+
 			with contextlib.suppress(IndexError):
-				line = self.source_lines[lineno-1]
-		ctx = SyntaxErrorContext(filename=self.filename, lineno=lineno, offset=offset, text=line)
-		return SyntaxError(message, ctx)
+				text = self.source_lines[sl]
+
+		kwargs = dict(
+			filename=self.filename,
+			lineno=lineno,
+			offset=offset,
+			text=text,
+		)
+		if sys.version_info >= (3, 10):
+			kwargs.update(dict(
+				end_lineno=end_lineno,
+				end_offset=end_offset,
+			))
+
+		return SyntaxError(message, SyntaxErrorContext(**kwargs))
 
 class ListingTransformer(Transformer):
 	"""like the parent class but lists all imported modules as self.imports"""
@@ -230,3 +127,44 @@ class ListingTransformer(Transformer):
 	def import_call(self, attribute_source, *args, **kwargs):
 		self.imports.append(attribute_source)
 		return super().import_call(attribute_source, *args, **kwargs)
+
+def find_imports(root_node, **kwargs):
+	t = ListingTransformer(**kwargs)
+	t.visit(root_node)
+	return t.imports
+
+def copy_annotations(
+	original_func: typing.Callable[P, T],
+) -> typing.Callable[[typing.Callable[..., typing.Any]], typing.Callable[P, T]]:
+	"""A decorator that applies the annotations from one function onto another.
+
+	It can be a lie, but it aids the type checker and any IDE intellisense.
+	"""
+
+	def inner(new_func: typing.Callable[..., typing.Any]) -> typing.Callable[P, T]:
+		return functools.update_wrapper(new_func, original_func, ("__doc__", "__annotations__"))  # type: ignore
+
+	return inner
+
+
+# Some of the parameter annotations are too narrow or wide, but they should be "overriden" by this decorator.
+@copy_annotations(ast.parse)
+def parse(
+	source: typing.Union[str, ReadableBuffer],
+	filename: str = DEFAULT_FILENAME,
+	mode: str = "exec",
+	*,
+	type_comments: bool = False,
+	feature_version: typing.Optional[typing.Tuple[int, int]] = None,
+) -> ast.Module:
+	"""Convert source code with inline import expressions to an AST. Has the same signature as ast.parse."""
+
+	return transform_ast(
+		ast.parse(
+			transform_source(source),
+			filename,
+			mode,
+			type_comments=type_comments,
+			feature_version=feature_version,
+		)
+	)

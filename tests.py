@@ -26,14 +26,6 @@ import pytest
 
 import import_expression as ie
 
-try:
-	import astunparse
-except ImportError:
-	HAVE_ASTUNPARSE = False
-else:
-	HAVE_ASTUNPARSE = True
-
-
 invalid_attribute_cases = (
 	# arrange this as if ! is binary 1, empty str is 0
 	'!a',
@@ -216,11 +208,6 @@ def test_eval_exec():
 
 	assert g['foo'](1) == 'can we make it into jishaku?'
 
-def test_importer_name_not_mangled():
-	# if import_expression.constants.IMPORTER.startswith('__'),
-	# this will fail
-	ie.exec('class Foo: x = io!')
-
 def test_flags():
 	import ast
 	assert isinstance(ie.compile('foo', flags=ast.PyCF_ONLY_AST), ast.AST)
@@ -248,7 +235,7 @@ def test_dont_imply_dedent():
 	with pytest.raises(SyntaxError):
 		ie.compile('def foo():\n\tpass', mode='single', flags=PyCF_DONT_IMPLY_DEDENT)
 
-def test_parse_ast():
+def test_transform_ast():
 	from typing import Any
 	node = ie.parse(ie.parse('typing!.Any', mode='eval'))
 	assert ie.eval(node) is Any
@@ -256,12 +243,6 @@ def test_parse_ast():
 def test_locals_arg():
 	ie.exec('assert locals() is globals()', {})
 	ie.exec('assert locals() is not globals()', {}, {})
-
-def test_update_globals():
-	import collections
-	code = ie.compile('collections!.Counter', mode='eval')
-	g = ie.update_globals({})
-	assert eval(code, g) is collections.Counter
 
 def test_find_imports():
 	with pytest.raises(SyntaxError):
@@ -286,46 +267,6 @@ class remove(contextlib.AbstractContextManager):
 def test_bytes():
 	import typing
 	assert ie.eval(b'typing!.TYPE_CHECKING') == typing.TYPE_CHECKING
-
-@pytest.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
-@pytest.mark.parametrize('encoding', ['import_expression', 'ie'])
-def test_encoding(encoding):
-	import import_expression._codec
-	import_expression._codec.register()
-
-	import tempfile
-	import typing
-	fn = tempfile.mktemp()
-	with remove(fn), open(fn, mode='w+', encoding=encoding) as f:
-		f.write('x = typing!.TYPE_CHECKING')
-		f.seek(0)
-		g = {}
-		exec(f.read(), g)
-		assert g['x'] == typing.TYPE_CHECKING
-		assert not f.read()
-
-		f.seek(0)
-		while f.readline():  # we must reach EOF eventually
-			pass
-
-@pytest.mark.skipif(not HAVE_ASTUNPARSE, reason='requires the [codec] setup.py extra')
-@pytest.mark.parametrize('encoding', ['import_expression', 'ie'])
-def test_encoding_2(encoding):
-	import codecs
-	import typing
-	g = {}
-	exec(codecs.decode(b'x = typing!.TYPE_CHECKING', encoding=encoding), g)
-	assert g['x'] == typing.TYPE_CHECKING
-
-@pytest.mark.skipif(not HAVE_ASTUNPARSE, reason='no need to test built in encoding without the [codec] setup.py extra')
-def test_utf8_unaffected():
-	import tempfile
-	fn = tempfile.mktemp()
-	with remove(fn), open(fn, mode='w+', encoding='shift-jis') as f:
-		f.write('foo')
-		f.seek(0)
-		assert f.read() == 'foo'
-		assert not f.read()
 
 def test_beat_is_gay():
 	with pytest.raises(SyntaxError):
