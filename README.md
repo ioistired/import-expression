@@ -47,15 +47,6 @@ for line in sys.stdin:
 	print(import_expression.eval(code, dict(l=line)))
 ```
 
-### Custom encoding
-
-```py
-# encoding: import_expression
-print(typing!.TYPE_CHECKING)
-```
-
-This file, when run, will print True/False. For maximum laziness you can also do `#coding:ie`.
-
 ### REPL usage
 
 Run `import-expression` for an import expression enabled REPL. \
@@ -66,11 +57,6 @@ See `import-expression --help` for more details.
 ### Running a file
 
 Run `import-expression <filename.py>`.
-
-### File rewriter
-
-Run `import-expression-rewrite <file.py>` to rewrite a file containing import expressions to standard Python. \
-Add the `-i` flag to rewrite in-place.
 
 ## Limitations / Known Issues
 
