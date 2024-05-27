@@ -41,6 +41,7 @@ T = typing.TypeVar("T")
 def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 	try:
 		tokens, encoding = tokenize(s)
+		tokens = list(tokens)
 	except tokenize_.TokenError as ex:
 		message, (lineno, offset) = ex.args
 
@@ -51,7 +52,6 @@ def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 
 		raise SyntaxError(message, (filename, lineno-1, offset, source_line)) from None
 
-	tokens = list(tokens)
 	transformed = transform_tokens(tokens)
 	return tokenize_.untokenize(transformed).decode(encoding)
 
