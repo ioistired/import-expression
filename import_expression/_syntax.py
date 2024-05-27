@@ -170,9 +170,9 @@ def transform_tokens(tokens: typing.Iterable[tokenize_.TokenInfo]) -> typing.Lis
 	return new_tokens
 
 def tokenize(source: typing.Union[str, ReadableBuffer]) -> str:
-    if isinstance(source, str):
-        source = source.encode('utf-8')
-    stream = io.BytesIO(source)
-    encoding, _ = tokenize_.detect_encoding(stream.readline)
-    stream.seek(0)
-    return tokenize_.tokenize(stream.readline), encoding
+	if isinstance(source, str):
+		source = source.encode('utf-8')
+	stream = io.BytesIO(source)
+	encoding, _ = tokenize_.detect_encoding(stream.readline)
+	stream.seek(0)
+	return tokenize_.tokenize(stream.readline), encoding
