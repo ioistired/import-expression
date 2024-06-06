@@ -10,7 +10,7 @@ urllib.parse!.quote('hello there')
 
 Into this equivalent code:
 ```py
-importlib.import_module('urllib.parse').quote('hello there')
+__import__('importlib').import_module('urllib.parse').quote('hello there')
 ```
 
 ## Usage
