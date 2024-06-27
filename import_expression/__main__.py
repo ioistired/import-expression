@@ -86,7 +86,6 @@ class ImportExpressionCompile:
 				self.flags |= feature.compiler_flag
 		return codeob
 
-
 class ImportExpressionInteractiveConsole(code.InteractiveConsole):
 	def __init__(self, locals=None, filename='<console>'):
 		super().__init__(locals, filename)
@@ -159,7 +158,8 @@ class REPLThread(threading.Thread):
 			warnings.filterwarnings(
 				'ignore',
 				message=r'^coroutine .* was never awaited$',
-				category=RuntimeWarning)
+				category=RuntimeWarning,
+			)
 
 			loop.call_soon_threadsafe(loop.stop)
 
@@ -184,7 +184,8 @@ class ImportExpressionCompleter(rlcompleter.Completer):
 			# we need to replace so that the tab completions all have the correct prefix
 			match.replace(mod_name, mod_name_with_import_op, 1)
 			for match
-			in super().attr_matches(text.replace(mod_name_with_import_op, mod_name))]
+			in super().attr_matches(text.replace(mod_name_with_import_op, mod_name))
+		]
 		self.namespace = old_namespace
 		return res
 
@@ -270,7 +271,8 @@ def main():
 		key: globals()[key] for key in [
 			'__name__', '__package__',
 			'__loader__', '__spec__',
-			'__builtins__', '__file__']
+			'__builtins__', '__file__'
+		]
 		if key in globals()
 	}
 

@@ -43,6 +43,11 @@ del _sec_fields
 
 def transform_ast(root_node, **kwargs): return ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
 
+def find_imports(root_node, **kwargs):
+	t = ListingTransformer(**kwargs)
+	t.visit(root_node)
+	return t.imports
+
 class Transformer(ast.NodeTransformer):
 	"""An AST transformer that replaces calls to MARKER with '__import__("importlib").import_module(...)'."""
 
@@ -75,18 +80,27 @@ class Transformer(ast.NodeTransformer):
 			and len(node.args) == 1
 			and isinstance(node.args[0], (ast.Attribute, ast.Name))
 		):
-			node.func = ast.Attribute(
-				value=ast.Call(
-					func=ast.Name(id="__import__", ctx=ast.Load()),
-					args=[ast.Constant(value="importlib")],
-					keywords=[],
-				),
-				attr="import_module",
-				ctx=ast.Load(),
-			)
-			node.args[0] = ast.Constant(value=self._collapse_attributes(node.args[0]))
-
+			identifier = self._collapse_attributes(node.args[0])
+			self.transform_import_expr(node, identifier, node.args[0].ctx)
 		return self.generic_visit(node)
+
+	def transform_import_expr(self, node, identifier, ctx):
+		node.func = ast.Attribute(
+			value=ast.Call(
+				func=ast.Name(id="__import__", ctx=ast.Load()),
+				args=[ast.Constant(value="importlib")],
+				keywords=[],
+			),
+			attr="import_module",
+			ctx=ctx,
+		)
+		identifier = self._collapse_attributes(node.args[0])
+		self.import_hook(identifier)
+		node.args[0] = ast.Constant(value=identifier)
+
+	def import_hook(self, identifier):
+		"""defined by subclasses"""
+		...
 
 	def _syntax_error(self, message, node):
 		lineno = getattr(node, 'lineno', None)
@@ -117,3 +131,13 @@ class Transformer(ast.NodeTransformer):
 			))
 
 		return SyntaxError(message, SyntaxErrorContext(**kwargs))
+
+class ListingTransformer(Transformer):
+	"""like the parent class but lists all imported modules as self.imports"""
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.imports = []
+
+	def import_hook(self, attribute_source):
+		self.imports.append(attribute_source)
