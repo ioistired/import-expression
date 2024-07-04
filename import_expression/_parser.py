@@ -28,18 +28,10 @@ from collections import namedtuple
 from typing_extensions import ParamSpec
 from typing_extensions import Buffer as ReadableBuffer
 from .constants import *
+from .utils import SyntaxErrorContext
 
 P = ParamSpec("P")
 T = typing.TypeVar("T")
-
-# https://github.com/python/cpython/blob/5d04cc50e51cb262ee189a6ef0e79f4b372d1583/Objects/exceptions.c#L2438-L2441
-_sec_fields = 'filename lineno offset text'.split()
-if sys.version_info >= (3, 10):
-	_sec_fields.extend('end_lineno end_offset'.split())
-
-SyntaxErrorContext = namedtuple('SyntaxErrorContext', _sec_fields)
-
-del _sec_fields
 
 def transform_ast(root_node, **kwargs): return ast.fix_missing_locations(Transformer(**kwargs).visit(root_node))
 

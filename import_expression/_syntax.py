@@ -50,7 +50,8 @@ def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 		except IndexError:
 			source_line = None
 
-		raise SyntaxError(message, (filename, lineno-1, offset, source_line)) from None
+		ctx = SyntaxErrorContext(filename=filename, lineno=lineno-1, offset=offset, text=source_line)
+		raise SyntaxError(message, ctx) from None
 
 	transformed = transform_tokens(tokens)
 	return tokenize_.untokenize(transformed).decode(encoding)
