@@ -25,15 +25,15 @@ def decode(b, errors='strict'):
 class IeDecoder(codecs.BufferedIncrementalDecoder):
 	'''"incremental decoder" in name only, for it is neither'''
 	def decode(self, b, final=False):
-        self.buffer += b
-        if final:
-            buffer = self.buffer
-            super().reset()
-            return decode(buffer)[0]
-        return ""
+		self.buffer += b
+		if final:
+			buffer = self.buffer
+			super().reset()
+			return decode(buffer)[0]
+		return ""
 
 def search_function(encoding, codec_names={'import_expression', 'ie'}):
-	if encoding not in codec_names:  # pragma: no cover
+	if encoding not in codec_names:	 # pragma: no cover
 		return None
 	return codecs.CodecInfo(
 		name='import_expression',
