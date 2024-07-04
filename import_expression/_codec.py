@@ -22,6 +22,16 @@ def decode(b, errors='strict'):
 	unparsed = unparse(parsed)
 	return unparsed, len(decoded)
 
+class IeDecoder(codecs.BufferedIncrementalDecoder):
+	'''"incremental decoder" in name only, for it is neither'''
+	def decode(self, b, final=False):
+        self.buffer += b
+        if final:
+            buffer = self.buffer
+            super().reset()
+            return decode(buffer)[0]
+        return ""
+
 def search_function(encoding, codec_names={'import_expression', 'ie'}):
 	if encoding not in codec_names:  # pragma: no cover
 		return None
@@ -30,7 +40,7 @@ def search_function(encoding, codec_names={'import_expression', 'ie'}):
 		encode=encode,
 		decode=decode,
 		incrementalencoder=utf_8.IncrementalEncoder,
-		incrementaldecoder=utf_8.IncrementalDecoder,
+		incrementaldecoder=IeDecoder,
 		streamreader=utf_8.StreamReader,
 		streamwriter=utf_8.StreamWriter,
 	)
