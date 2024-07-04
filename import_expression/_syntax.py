@@ -32,8 +32,8 @@ import collections
 from token import *
 from .constants import *
 import tokenize as tokenize_
-from typing_extensions import Buffer as ReadableBuffer
 from typing_extensions import ParamSpec
+from typing_extensions import Buffer as ReadableBuffer
 
 P = ParamSpec("P")
 T = typing.TypeVar("T")
@@ -54,7 +54,7 @@ def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
 		raise SyntaxError(message, ctx) from None
 
 	transformed = transform_tokens(tokens)
-	return tokenize_.untokenize(transformed).decode(encoding)
+	return tokenize_.untokenize(transformed) #.decode(encoding)
 
 def offset_token_horizontal(tok: tokenize_.TokenInfo, offset: int) -> tokenize_.TokenInfo:
 	"""Takes a token and returns a new token with the columns for start and end offset by a given amount."""
@@ -171,9 +171,4 @@ def transform_tokens(tokens: typing.Iterable[tokenize_.TokenInfo]) -> typing.Lis
 	return new_tokens
 
 def tokenize(source: typing.Union[str, ReadableBuffer]) -> (str, str):
-	if isinstance(source, str):
-		source = source.encode('utf-8')
-	stream = io.BytesIO(source)
-	encoding, _ = tokenize_.detect_encoding(stream.readline)
-	stream.seek(0)
-	return tokenize_.tokenize(stream.readline), encoding
+	return tokenize_.generate_tokens(io.StringIO(source).readline), 'utf-8'
