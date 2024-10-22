@@ -45,13 +45,6 @@ from codeop import PyCF_DONT_IMPLY_DEDENT, PyCF_ALLOW_INCOMPLETE_INPUT
 import import_expression
 from import_expression import constants
 
-if os.path.basename(sys.argv[0]) == 'import_expression':
-	import warnings
-	warnings.warn(UserWarning(
-		'The import_expression alias is deprecated, and will be removed in v2.0. '
-		'Please use import-expression (with a hyphen) instead.'
-	))
-
 features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
 
 try:
