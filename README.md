@@ -55,6 +55,8 @@ Combine these with `-i` to open a REPL after running the file specified on the c
 
 See `import-expression --help` for more details.
 
+The REPL requires Python 3.10+.
+
 ### Running a file
 
 Run `import-expression <filename.py>`.
