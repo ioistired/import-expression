@@ -272,6 +272,11 @@ def main():
 	}
 
 	args = parse_args()
+
+	if args.asyncio and not SUPPORTS_ASYNCIO_REPL:
+		print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
+		sys.exit(2)
+
 	prelude = None
 	if args.filename:
 		with open(args.filename) as f:
@@ -293,9 +298,6 @@ def main():
 	interact_kwargs = dict(banner='' if args.quiet else None, exitmsg='' if args.quiet else None)
 
 	if args.asyncio:
-		if not SUPPORTS_ASYNCIO_REPL:
-			print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
-			sys.exit(2)
 		asyncio_main(repl_locals, interact_kwargs)
 		sys.exit(0)
 
