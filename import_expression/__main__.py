@@ -47,6 +47,8 @@ from codeop import PyCF_DONT_IMPLY_DEDENT, PyCF_ALLOW_INCOMPLETE_INPUT
 import import_expression
 from import_expression import constants
 
+features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
+
 try:
 	from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
 except ImportError:
@@ -54,7 +56,6 @@ except ImportError:
 else:
 	SUPPORTS_ASYNCIO_REPL = True
 
-features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
 
 class ImportExpressionCommandCompiler(codeop.CommandCompiler):
 	def __init__(self):
