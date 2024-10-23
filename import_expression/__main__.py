@@ -1,4 +1,5 @@
 # Copyright © io mintz <io@mintz.cc>
+# Copyright © Thanos <111999343+Sachaa-Thanasius@users.noreply.github.com>
 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the “Software”),
@@ -30,6 +31,7 @@ import code
 import codeop
 import concurrent.futures
 import contextlib
+import contextvars
 import importlib
 import inspect
 import os.path
@@ -37,6 +39,7 @@ import rlcompleter
 import sys
 import traceback
 import threading
+import tokenize
 import types
 import warnings
 from asyncio import futures
@@ -45,21 +48,9 @@ from codeop import PyCF_DONT_IMPLY_DEDENT, PyCF_ALLOW_INCOMPLETE_INPUT
 import import_expression
 from import_expression import constants
 
-if os.path.basename(sys.argv[0]) == 'import_expression':
-	import warnings
-	warnings.warn(UserWarning(
-		'The import_expression alias is deprecated, and will be removed in v2.0. '
-		'Please use import-expression (with a hyphen) instead.'
-	))
-
 features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
 
-try:
-	from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
-except ImportError:
-	SUPPORTS_ASYNCIO_REPL = False
-else:
-	SUPPORTS_ASYNCIO_REPL = True
+from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
 
 class ImportExpressionCommandCompiler(codeop.CommandCompiler):
 	def __init__(self):
@@ -100,11 +91,14 @@ class ImportExpressionAsyncIOInteractiveConsole(ImportExpressionInteractiveConso
 		self.compile.compiler.flags |= PyCF_ALLOW_TOP_LEVEL_AWAIT
 
 		self.loop = loop
+		self.context = contextvars.copy_context()
 
 	def runcode(self, code):
+		global return_code
 		future = concurrent.futures.Future()
 
 		def callback():
+			global return_code
 			global repl_future
 			global repl_future_interrupted
 
@@ -114,8 +108,10 @@ class ImportExpressionAsyncIOInteractiveConsole(ImportExpressionInteractiveConso
 			func = types.FunctionType(code, self.locals)
 			try:
 				coro = func()
-			except SystemExit:
-				raise
+			except SystemExit as se:
+				return_code = se.code
+				self.loop.stop()
+				return
 			except KeyboardInterrupt as ex:
 				repl_future_interrupted = True
 				future.set_exception(ex)
@@ -129,17 +125,19 @@ class ImportExpressionAsyncIOInteractiveConsole(ImportExpressionInteractiveConso
 				return
 
 			try:
-				repl_future = self.loop.create_task(coro)
+				repl_future = self.loop.create_task(coro, context=self.context)
 				futures._chain_future(repl_future, future)
 			except BaseException as exc:
 				future.set_exception(exc)
 
-		self.loop.call_soon_threadsafe(callback)
+		self.loop.call_soon_threadsafe(callback, context=self.context)
 
 		try:
 			return future.result()
-		except SystemExit:
-			raise
+		except SystemExit as se:
+			return_code = se.code
+			self.loop.stop()
+			return
 		except BaseException:
 			if repl_future_interrupted:
 				self.write("\nKeyboardInterrupt\n")
@@ -153,6 +151,11 @@ class REPLThread(threading.Thread):
 
 	def run(self):
 		try:
+			if startup_path := os.getenv("PYTHONSTARTUP"):
+				with tokenize.open(startup_path) as f:
+					startup_code = compile(f.read(), startup_path, "exec")
+					exec(startup_code, console.locals)
+
 			console.interact(**self.interact_kwargs)
 		finally:
 			warnings.filterwarnings(
@@ -195,7 +198,8 @@ def asyncio_main(repl_locals, interact_kwargs):
 	global repl_future
 	global repl_future_interrupted
 
-	loop = asyncio.get_event_loop()
+	loop = asyncio.new_event_loop()
+	asyncio.set_event_loop(loop)
 
 	console = ImportExpressionAsyncIOInteractiveConsole(repl_locals, loop)
 
@@ -210,12 +214,14 @@ def asyncio_main(repl_locals, interact_kwargs):
 		try:
 			loop.run_forever()
 		except KeyboardInterrupt:
+			repl_future_interrupted = True
 			if repl_future and not repl_future.done():
 				repl_future.cancel()
-				repl_future_interrupted = True
 			continue
 		else:
 			break
+
+	return return_code
 
 def parse_args():
 	import argparse
@@ -273,10 +279,6 @@ def main():
 
 	args = parse_args()
 
-	if args.asyncio and not SUPPORTS_ASYNCIO_REPL:
-		print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
-		sys.exit(2)
-
 	prelude = None
 	if args.filename:
 		with open(args.filename) as f:
@@ -298,8 +300,7 @@ def main():
 	interact_kwargs = dict(banner='' if args.quiet else None, exitmsg='' if args.quiet else None)
 
 	if args.asyncio:
-		asyncio_main(repl_locals, interact_kwargs)
-		sys.exit(0)
+		sys.exit(asyncio_main(repl_locals, interact_kwargs))
 
 	ImportExpressionInteractiveConsole(repl_locals).interact(**interact_kwargs)
 
