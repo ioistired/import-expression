@@ -189,7 +189,7 @@ class ImportExpressionCompleter(rlcompleter.Completer):
 		self.namespace = old_namespace
 		return res
 
-def asyncio_main(repl_locals, interact_kwargs):
+def asyncio_main(repl_locals, interact_kwargs, prelude=None):
 	global console
 	global loop
 	global repl_future
@@ -198,6 +198,8 @@ def asyncio_main(repl_locals, interact_kwargs):
 	loop = asyncio.get_event_loop()
 
 	console = ImportExpressionAsyncIOInteractiveConsole(repl_locals, loop)
+	if prelude is not None:
+		console.runcode(prelude)
 
 	repl_future = None
 	repl_future_interrupted = False
@@ -272,9 +274,15 @@ def main():
 	}
 
 	args = parse_args()
+	prelude = None
 	if args.filename:
 		with open(args.filename) as f:
-			import_expression.exec(f.read(), globals=repl_locals)
+			flags = 0
+			if args.asyncio:
+				flags |= PyCF_ALLOW_TOP_LEVEL_AWAIT
+			prelude = import_expression.compile(f.read(), flags=flags)
+		if not args.asyncio:
+			import_expression.exec(prelude, globals=repl_locals)
 		if not args.interactive:
 			sys.exit(0)
 
@@ -286,7 +294,7 @@ def main():
 		if not SUPPORTS_ASYNCIO_REPL:
 			print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
 			sys.exit(2)
-		asyncio_main(repl_locals, interact_kwargs)
+		asyncio_main(repl_locals, interact_kwargs, prelude)
 		sys.exit(0)
 
 	ImportExpressionInteractiveConsole(repl_locals).interact(**interact_kwargs)
