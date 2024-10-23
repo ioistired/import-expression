@@ -49,13 +49,7 @@ from import_expression import constants
 
 features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
 
-try:
-	from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
-except ImportError:
-	SUPPORTS_ASYNCIO_REPL = False
-else:
-	SUPPORTS_ASYNCIO_REPL = True
-
+from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
 
 class ImportExpressionCommandCompiler(codeop.CommandCompiler):
 	def __init__(self):
@@ -283,10 +277,6 @@ def main():
 	}
 
 	args = parse_args()
-
-	if args.asyncio and not SUPPORTS_ASYNCIO_REPL:
-		print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
-		sys.exit(2)
 
 	prelude = None
 	if args.filename:
