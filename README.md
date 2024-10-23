@@ -50,7 +50,8 @@ for line in sys.stdin:
 ### REPL usage
 
 Run `import-expression` for an import expression enabled REPL. \
-Run `import-expression -a` for a REPL that supports both import expressions and top level `await` (3.8+).
+Run `import-expression -a` for a REPL that supports both import expressions and top level `await` (3.8+). \
+Combine these with `-i` to open a REPL after running the file specified on the command line. `-ia` allows top-level await.
 
 See `import-expression --help` for more details.
 
