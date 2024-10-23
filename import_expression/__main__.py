@@ -277,7 +277,6 @@ def main():
 		print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
 		sys.exit(2)
 
-	prelude = None
 	if args.filename:
 		with open(args.filename) as f:
 			flags = 0
@@ -285,9 +284,12 @@ def main():
 				flags |= PyCF_ALLOW_TOP_LEVEL_AWAIT
 			prelude = import_expression.compile(f.read(), flags=flags)
 		if args.asyncio:
-			# we need a new loop because using asyncio.run here breaks the console
-			loop = asyncio.new_event_loop()
-			loop.run_until_complete(eval(prelude, repl_locals))
+			prelude_result = eval(prelude, repl_locals)
+			# if there are no top level awaits in the code, eval will not return a coroutine
+			if inspect.isawaitable(prelude_result):
+				# we need a new loop because using asyncio.run here breaks the console
+				loop = asyncio.new_event_loop()
+				loop.run_until_complete(prelude_result)
 		else:
 			import_expression.exec(prelude, globals=repl_locals)
 		if not args.interactive:
