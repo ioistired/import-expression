@@ -25,11 +25,8 @@ import typing
 import functools
 import contextlib
 from collections import namedtuple
-from typing_extensions import ParamSpec
-from typing_extensions import Buffer as ReadableBuffer
 from .constants import *
 
-P = ParamSpec("P")
 T = typing.TypeVar("T")
 
 # https://github.com/python/cpython/blob/5d04cc50e51cb262ee189a6ef0e79f4b372d1583/Objects/exceptions.c#L2438-L2441

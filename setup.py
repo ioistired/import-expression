@@ -124,10 +124,6 @@ setuptools.setup(
 
 	packages=['import_expression'],
 
-	install_requires=[
-		'typing-extensions >= 4.3, < 5'
-	],
-
 	extras_require={
 		'test': [
 			'pytest',

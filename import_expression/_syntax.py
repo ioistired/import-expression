@@ -32,10 +32,7 @@ import collections
 from token import *
 from .constants import *
 import tokenize as tokenize_
-from typing_extensions import Buffer as ReadableBuffer
-from typing_extensions import ParamSpec
 
-P = ParamSpec("P")
 T = typing.TypeVar("T")
 
 def fix_syntax(s: typing.AnyStr, filename=DEFAULT_FILENAME) -> bytes:
@@ -169,7 +166,7 @@ def transform_tokens(tokens: typing.Iterable[tokenize_.TokenInfo]) -> typing.Lis
 
 	return new_tokens
 
-def tokenize(source: typing.Union[str, ReadableBuffer]) -> (str, str):
+def tokenize(source) -> (str, str):
 	if isinstance(source, str):
 		source = source.encode('utf-8')
 	stream = io.BytesIO(source)
