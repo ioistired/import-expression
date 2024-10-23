@@ -43,10 +43,16 @@ import types
 import warnings
 from asyncio import futures
 from codeop import PyCF_DONT_IMPLY_DEDENT, PyCF_ALLOW_INCOMPLETE_INPUT
-from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
 
 import import_expression
 from import_expression import constants
+
+try:
+	from ast import PyCF_ALLOW_TOP_LEVEL_AWAIT
+except ImportError:
+	SUPPORTS_ASYNCIO_REPL = False
+else:
+	SUPPORTS_ASYNCIO_REPL = True
 
 features = [getattr(__future__, fname) for fname in __future__.all_feature_names]
 
