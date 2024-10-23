@@ -228,6 +228,7 @@ def parse_args():
 	parser = argparse.ArgumentParser(prog='import-expression', description='a python REPL with inline import support')
 	parser.add_argument('-q', '--quiet', action='store_true', help='hide the intro banner and exit message')
 	parser.add_argument('-a', '--asyncio', action='store_true', help='use the asyncio REPL (python 3.8+)')
+	parser.add_argument('-i', dest='interactive', action='store_true', help='inspect interactively after running script')
 	parser.add_argument('-V', '--version', action='version', version=version_info)
 	parser.add_argument('filename', help='run this file', nargs='?')
 
@@ -261,12 +262,6 @@ def main():
 		# which would be inconsistent with `python -m import_expression`.
 		sys.path.insert(0, cwd)
 
-	args = parse_args()
-	if args.filename:
-		with open(args.filename) as f:
-			import_expression.exec(f.read())
-		sys.exit(0)
-
 	repl_locals = {
 		key: globals()[key] for key in [
 			'__name__', '__package__',
@@ -275,6 +270,13 @@ def main():
 		]
 		if key in globals()
 	}
+
+	args = parse_args()
+	if args.filename:
+		with open(args.filename) as f:
+			import_expression.exec(f.read(), globals=repl_locals)
+		if not args.interactive:
+			sys.exit(0)
 
 	setup_history_and_tab_completion(repl_locals)
 
