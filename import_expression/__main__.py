@@ -272,9 +272,24 @@ def main():
 	}
 
 	args = parse_args()
+
+	if args.asyncio and not SUPPORTS_ASYNCIO_REPL:
+		print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
+		sys.exit(2)
+
+	prelude = None
 	if args.filename:
 		with open(args.filename) as f:
-			import_expression.exec(f.read(), globals=repl_locals)
+			flags = 0
+			if args.asyncio:
+				flags |= PyCF_ALLOW_TOP_LEVEL_AWAIT
+			prelude = import_expression.compile(f.read(), flags=flags)
+		if args.asyncio:
+			# we need a new loop because using asyncio.run here breaks the console
+			loop = asyncio.new_event_loop()
+			loop.run_until_complete(eval(prelude, repl_locals))
+		else:
+			import_expression.exec(prelude, globals=repl_locals)
 		if not args.interactive:
 			sys.exit(0)
 
@@ -283,9 +298,6 @@ def main():
 	interact_kwargs = dict(banner='' if args.quiet else None, exitmsg='' if args.quiet else None)
 
 	if args.asyncio:
-		if not SUPPORTS_ASYNCIO_REPL:
-			print('Python3.8+ required for the AsyncIO REPL.', file=sys.stderr)
-			sys.exit(2)
 		asyncio_main(repl_locals, interact_kwargs)
 		sys.exit(0)
 
